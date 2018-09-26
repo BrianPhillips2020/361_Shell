@@ -42,19 +42,19 @@ int sh( int argc, char **argv, char **envp )
   while ( go )
     {
       /* print your prompt */
-
+      printf("361>::");
       /* get command line and process */
-
+      
       /* check for each built in command and implement */
 
       /*  else  program to exec */
-      {
+      //{
 	/* find it */
 	/* do fork(), execve() and waitpid() */
 
-	else
-	  fprintf(stderr, "%s: Command not found.\n", args[0]);
-      }
+	//else
+	//fprintf(stderr, "%s: Command not found.\n", args[0]);
+	//}
     }
   return 0;
 } /* sh() */
