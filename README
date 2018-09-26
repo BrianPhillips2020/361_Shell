@@ -1,3 +1,5 @@
 Created by Brian Phillips and Marc Bolinas
 
+type 'make' when in the directory to compile and automatically run the shell
+
 type "exit" to quit
