@@ -2,8 +2,8 @@
 CC=gcc
 #CC=gcc -Wall
 
-mysh: sh.o get_path.o main.c
-	$(CC) -g main.c sh.o get_path.o -o mysh
+shell: sh.o get_path.o main.c
+	$(CC) -g main.c sh.o get_path.o -o shell
 #	$(CC) -g main.c sh.o get_path.o bash_getcwd.o -o mysh
 
 pathmain: get_path.o get_path_main.o

@@ -43,18 +43,23 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = 256;
   char buffer[buffersize];
 
-
   while ( go )
     {
       /* print your prompt */
-      printf("361>::");
+      printf("361shell>> ");
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
       buffer[(int) strlen(buffer) - 1] = '\0';
       printf("inputted: %s\n", buffer);
 
       
+      char *token;
 
+      token = strtok(buffer, " ");
+      while(token != NULL){
+	printf("%s\n", token);
+	token = strtok(NULL, " ");
+      }
 
 
       /* check for each built in command and implement */
