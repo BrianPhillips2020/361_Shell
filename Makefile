@@ -4,6 +4,7 @@ CC=gcc
 
 shell: sh.o get_path.o main.c
 	$(CC) -g main.c sh.o get_path.o -o shell
+	./shell
 #	$(CC) -g main.c sh.o get_path.o bash_getcwd.o -o mysh
 
 pathmain: get_path.o get_path_main.o

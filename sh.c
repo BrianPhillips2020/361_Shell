@@ -53,6 +53,15 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = 256;
   char buffer[buffersize];
 
+  struct pathelement *tmp;
+  tmp = pathlist;
+  while(tmp->next != NULL){
+    printf("directory: %s\n", tmp->element);
+    tmp = tmp->next;
+  }
+
+
+
   while ( go )
     {
 
@@ -62,7 +71,7 @@ int sh( int argc, char **argv, char **envp )
 
 
       /* print your prompt */
-      printf("\n\n361shell>> ");
+      printf("\n361shell>> ");
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
 
@@ -90,8 +99,7 @@ int sh( int argc, char **argv, char **envp )
 	go = 0;
 	printf("Closing shell...\n\n\n");
       }
-
-      if(strcmp(args[0], "hello") == 0){
+      else if(strcmp(args[0], "hello") == 0){
 	printf("hello recognized!\n");
       }
 
@@ -107,12 +115,8 @@ int sh( int argc, char **argv, char **envp )
 	//fprintf(stderr, "%s: Command not found.\n", args[0]);
 	//}
 
-      //printf("command = %s\n", command);
-      //*command = NULL;
-      //printf("command = %s\n", command);
       
       for(int j = 0; j < i; j++){
-	//printf("freeing %s\n", args[j]);
 	args[j] = NULL;
 	free(args[j]);
       }
