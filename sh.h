@@ -6,6 +6,7 @@ char *which(char *command, struct pathelement *pathlist);
 char *where(char *command, struct pathelement *pathlist);
 void list (char *dir);
 void printenv(char **envp);
+int strcmp_ignore_case(char const *a, char const *b);
 
 #define PROMPTMAX 32
 #define MAXARGS 10

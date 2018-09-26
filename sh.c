@@ -55,44 +55,48 @@ int sh( int argc, char **argv, char **envp )
 
   while ( go )
     {
+
+      //printf("value of args[0] = %s\n", args[0]);
+      //printf("value of args[1] = %s\n", args[1]);
+
+
+
       /* print your prompt */
-      printf("361shell>> ");
+      printf("\n\n361shell>> ");
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
+
       buffer[(int) strlen(buffer) - 1] = '\0';
 
-      
       char *token;
-      char *cmmd = malloc(buffersize * sizeof(char));
-
-
       token = strtok(buffer, " ");
-      if(token != NULL){
-	strcpy(cmmd, token);
-      }
       
-      //printf("Command entered: %s\n", cmmd);
-
-      
-      i = 0;
-      while(token != NULL){
-	//printf("%s\n", token);
-
+      for(i = 0; token != NULL; token = strtok(NULL, " ")){
 	args[i] = malloc(sizeof(char) * (int) strlen(token));
 	strcpy(args[i], token);
 	i++;
-	token = strtok(NULL, " ");
       }
 
-      command = malloc(sizeof(char) * (int) strlen(args[0]));
-      strcpy(command, args[0]);
-      printf("command: %s\n", command);
-      for(int j = 1; j < i; j++){
+      if(args[0] == NULL)
+	args[0] = malloc(0);
+
+      for(int j = 0; j < i; j++){
 	printf("argument %d: %s\n", j, args[j]);
       }
-
-
+      
       /* check for each built in command and implement */
+
+      if(strcmp(args[0], "exit") == 0){
+	go = 0;
+	printf("Closing shell...\n\n\n");
+      }
+
+      if(strcmp(args[0], "hello") == 0){
+	printf("hello recognized!\n");
+      }
+
+
+
 
       /*  else  program to exec */
       //{
@@ -103,13 +107,20 @@ int sh( int argc, char **argv, char **envp )
 	//fprintf(stderr, "%s: Command not found.\n", args[0]);
 	//}
 
-
-
-      free(command);
+      //printf("command = %s\n", command);
+      //*command = NULL;
+      //printf("command = %s\n", command);
       
+      for(int j = 0; j < i; j++){
+	//printf("freeing %s\n", args[j]);
+	args[j] = NULL;
+	free(args[j]);
+      }
     }
   return 0;
 } /* sh() */
+
+
 
 char *which(char *command, struct pathelement *pathlist )
 {
