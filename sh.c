@@ -39,12 +39,24 @@ int sh( int argc, char **argv, char **envp )
   /* Put PATH into a linked list */
   pathlist = get_path();
 
+
+  int buffersize = 256;
+  char buffer[buffersize];
+
+
   while ( go )
     {
       /* print your prompt */
       printf("361>::");
       /* get command line and process */
+      fgets(buffer, buffersize, stdin);
+      buffer[(int) strlen(buffer) - 1] = '\0';
+      printf("inputted: %s\n", buffer);
+
       
+
+
+
       /* check for each built in command and implement */
 
       /*  else  program to exec */
