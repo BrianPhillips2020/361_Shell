@@ -1,3 +1,13 @@
+/*
+
+CISC361 Shell
+
+Marc Bolinas
+Brian Phillips
+
+
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -50,15 +60,35 @@ int sh( int argc, char **argv, char **envp )
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
       buffer[(int) strlen(buffer) - 1] = '\0';
-      printf("inputted: %s\n", buffer);
 
       
       char *token;
+      char *cmmd = malloc(buffersize * sizeof(char));
+
 
       token = strtok(buffer, " ");
+      if(token != NULL){
+	strcpy(cmmd, token);
+      }
+      
+      //printf("Command entered: %s\n", cmmd);
+
+      
+      i = 0;
       while(token != NULL){
-	printf("%s\n", token);
+	//printf("%s\n", token);
+
+	args[i] = malloc(sizeof(char) * (int) strlen(token));
+	strcpy(args[i], token);
+	i++;
 	token = strtok(NULL, " ");
+      }
+
+      command = malloc(sizeof(char) * (int) strlen(args[0]));
+      strcpy(command, args[0]);
+      printf("command: %s\n", command);
+      for(int j = 1; j < i; j++){
+	printf("argument %d: %s\n", j, args[j]);
       }
 
 
@@ -72,12 +102,18 @@ int sh( int argc, char **argv, char **envp )
 	//else
 	//fprintf(stderr, "%s: Command not found.\n", args[0]);
 	//}
+
+
+
+      free(command);
+      
     }
   return 0;
 } /* sh() */
 
 char *which(char *command, struct pathelement *pathlist )
 {
+  return NULL;
   /* loop through pathlist until finding command and return it.  Return
      NULL when not found. */
 
@@ -85,6 +121,7 @@ char *which(char *command, struct pathelement *pathlist )
 
 char *where(char *command, struct pathelement *pathlist )
 {
+  return NULL;
   /* similarly loop through finding all locations of command */
 } /* where() */
 

@@ -19,4 +19,4 @@ get_path_main.o: get_path_main.c get_path.h
 	$(CC) -g -c get_path_main.c
 
 clean:
-	rm -rf sh.o get_path.o mysh *~ mysh.dSYM *.o pathmain
+	rm -rf sh.o get_path.o shell *~ shell.dSYM *.o pathmain
