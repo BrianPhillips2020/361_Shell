@@ -53,12 +53,12 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = 256;
   char buffer[buffersize];
 
-  struct pathelement *tmp;
-  tmp = pathlist;
-  while(tmp->next != NULL){
-    printf("directory: %s\n", tmp->element);
-    tmp = tmp->next;
-  }
+  // struct pathelement *tmp;
+  //tmp = pathlist;
+  //while(tmp->next != NULL){
+  //printf("directory: %s\n", tmp->element);
+  //tmp = tmp->next;
+  //}
 
 
 
@@ -71,7 +71,7 @@ int sh( int argc, char **argv, char **envp )
 
 
       /* print your prompt */
-      printf("\n361shell>> ");
+      printf("\n(361)%s >> ", homedir);
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
 
@@ -90,7 +90,7 @@ int sh( int argc, char **argv, char **envp )
 	args[0] = malloc(0);
 
       for(int j = 0; j < i; j++){
-	printf("argument %d: %s\n", j, args[j]);
+	//printf("argument %d: %s\n", j, args[j]);
       }
       
       /* check for each built in command and implement */
@@ -103,6 +103,18 @@ int sh( int argc, char **argv, char **envp )
 	printf("hello recognized!\n");
       }
 
+
+
+      /* else program to exec */
+
+      char *tmp = which(args[0], pathlist);
+
+      if(tmp != NULL){
+	printf("Command found in: %s\n", tmp);
+      }
+      else if((int) strlen(args[0]) != 0){
+	printf("%s: Command not found\n", args[0]);
+      }
 
 
 
@@ -128,6 +140,25 @@ int sh( int argc, char **argv, char **envp )
 
 char *which(char *command, struct pathelement *pathlist )
 {
+  struct pathelement *p = pathlist;
+  
+
+  while(p){
+    int size = (int) strlen(p->element) + (int) strlen(command) + 1;
+    char tmp[size];
+    strcpy(tmp, p->element);
+    strcat(tmp, "/");
+    strcat(tmp, command);
+
+    if(access(tmp, F_OK) == 0){
+      printf("returning %s\n", tmp);
+      return tmp;
+    }
+    p = p->next;
+  }
+  
+  
+
   return NULL;
   /* loop through pathlist until finding command and return it.  Return
      NULL when not found. */
