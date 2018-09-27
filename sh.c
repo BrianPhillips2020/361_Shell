@@ -99,21 +99,59 @@ int sh( int argc, char **argv, char **envp )
 	go = 0;
 	printf("Closing shell...\n\n\n");
       }
-      else if(strcmp(args[0], "hello") == 0){
-	printf("hello recognized!\n");
+      else if(strcmp(args[0], "fork") == 0){
+	
       }
+      else{
+	//else program to exec
+	
+	char *tmp = which(args[0], pathlist);
+	
+	//execve(tmp, &args[1], envp);
+
+	if(tmp != NULL){
+	  printf("Command found in: %s\n", tmp);
+	  
+	  pid_t pid;
+	  pid = fork();
+	  
+	  if(pid < 0){
+	    perror("Error when forking");
+	  }
+	  else if(pid == 0){
+	    pid_t mypid = getpid();
+	    printf("hello from child %d\n", mypid);
+
+	    //execve(tmp, &args[1], envp);
+	    printf("%s\n", argv[1]);
+	    if(execve(tmp, &argv[1], envp) == -1){
+	      kill(mypid, SIGKILL);
+	    }
+
+	    
+	    //printf("execve returned: %d\n", i);
+	    
+	    //sleep(1);
+
+	    
+	    //printf("rip child\n");
+	    //kill(mypid, SIGKILL);
+	  }
+	  else{
+	    waitpid(pid, NULL, 0);
+	    //pid_t mypid = getpid();
+	    //printf("hello from parent %d\n", mypid);
+
+	    printf("parent reactivated\n");
+
+	  }
 
 
+	}
+	else if((int) strlen(args[0]) != 0){
+	  printf("%s: Command not found\n", args[0]);
 
-      /* else program to exec */
-
-      char *tmp = which(args[0], pathlist);
-
-      if(tmp != NULL){
-	printf("Command found in: %s\n", tmp);
-      }
-      else if((int) strlen(args[0]) != 0){
-	printf("%s: Command not found\n", args[0]);
+	}
       }
 
 
@@ -145,13 +183,14 @@ char *which(char *command, struct pathelement *pathlist )
 
   while(p){
     int size = (int) strlen(p->element) + (int) strlen(command) + 1;
-    char tmp[size];
+    //char tmp[size];
+    char *tmp = malloc(size * sizeof(char));
     strcpy(tmp, p->element);
     strcat(tmp, "/");
     strcat(tmp, command);
 
     if(access(tmp, F_OK) == 0){
-      printf("returning %s\n", tmp);
+      //printf("returning %s\n", tmp);
       return tmp;
     }
     p = p->next;
