@@ -173,6 +173,10 @@ char *where(char *command, struct pathelement *pathlist )
 
 void list ( char *dir )
 {
+
+  if(dir == NULL){
+    printf("hello!\n");
+  }
   /* see man page for opendir() and readdir() and print out filenames for
      the directory passed */
 } /* list() */
