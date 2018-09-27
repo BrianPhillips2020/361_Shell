@@ -74,7 +74,6 @@ int sh( int argc, char **argv, char **envp )
       printf("\n(361)%s >> ", homedir);
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
-
       buffer[(int) strlen(buffer) - 1] = '\0';
 
       char *token;
@@ -85,22 +84,17 @@ int sh( int argc, char **argv, char **envp )
 	strcpy(args[i], token);
 	i++;
       }
-
       if(args[0] == NULL)
 	args[0] = malloc(0);
 
       for(int j = 0; j < i; j++){
-	//printf("argument %d: %s\n", j, args[j]);
+	printf("argument %d: %s\n", j, args[j]);
       }
       
       /* check for each built in command and implement */
-
       if(strcmp(args[0], "exit") == 0){
 	go = 0;
 	printf("Closing shell...\n\n\n");
-      }
-      else if(strcmp(args[0], "fork") == 0){
-	
       }
       else{
 	//else program to exec
@@ -110,7 +104,7 @@ int sh( int argc, char **argv, char **envp )
 	//execve(tmp, &args[1], envp);
 
 	if(tmp != NULL){
-	  printf("Command found in: %s\n", tmp);
+	  //printf("Command found in: %s\n", tmp);
 	  
 	  pid_t pid;
 	  pid = fork();
@@ -120,22 +114,9 @@ int sh( int argc, char **argv, char **envp )
 	  }
 	  else if(pid == 0){
 	    pid_t mypid = getpid();
-	    printf("hello from child %d\n", mypid);
-
-	    //execve(tmp, &args[1], envp);
-	    printf("%s\n", argv[1]);
-	    if(execve(tmp, &argv[1], envp) == -1){
+	    if(execve(tmp, &args[1], envp) == -1){
 	      kill(mypid, SIGKILL);
 	    }
-
-	    
-	    //printf("execve returned: %d\n", i);
-	    
-	    //sleep(1);
-
-	    
-	    //printf("rip child\n");
-	    //kill(mypid, SIGKILL);
 	  }
 	  else{
 	    waitpid(pid, NULL, 0);
