@@ -37,6 +37,11 @@ int sh( int argc, char **argv, char **envp )
   homedir = password_entry->pw_dir;/* Home directory to start
 				      out with*/
 
+  char currentdir[PATH_MAX];
+  strcpy(currentdir, homedir);
+  printf("currentdir: %s\n", currentdir);
+
+
   if ( (pwd = getcwd(NULL, PATH_MAX+1)) == NULL )
     {
       perror("getcwd");
@@ -69,25 +74,23 @@ int sh( int argc, char **argv, char **envp )
 
       if(token != NULL){
 	command = malloc(sizeof(char) * (int) strlen(token));
+	args[0] = malloc(sizeof(char) * (int) strlen(token));
 	strcpy(command, token);
+	strcpy(args[0], token);
       }
       else{
-	//printf("allocating 0\n");
 	command = malloc(0);
       }
       token = strtok(NULL, " ");
+      
 
-      args[0] = malloc(sizeof(char));
-      args[0] = "";
+      //because programs assume argv[0] is the program name itself, args[0]
+      //cannot be an actual argument, just the program name
       for(i = 1; token != NULL; token = strtok(NULL, " ")){
 	printf("allocating args\n");
 	args[i] = malloc(sizeof(char) * (int) strlen(token));
 	strcpy(args[i], token);
 	i++;
-      }
-      
-      for(int j = 1; j < i; j++){
-	//printf("argument %d: %s\n", j, args[j]);
       }
       
       /* check for each built in command and implement */
@@ -100,57 +103,49 @@ int sh( int argc, char **argv, char **envp )
       }
       else{
 	//else program to exec
-	
-	char *checker = NULL;
-	checker = strstr(command, "/");
 
-	if(strstr(command, "/") == command){
-	  printf("command starts with /\n");
-	  if(access(command, X_OK) == 0){
-	    printf("found command\n");
-	    
-	    pid_t pid;
-	    pid = fork();
-
-	    if(pid < 0){
-	      exit(1);
-	    }
-	    else if(pid == 0){
-	      pid_t mypid = getpid();
-
-	      if(execve(command, args, envp) == -1){
-		printf("killing child...\n");
-		kill(mypid, SIGKILL);
-	      }
-	    }
-	    else{
-	      waitpid(pid, NULL, 0);
-	    }
-	  }
-	  else{
-	    printf("Command not found at location: %s\n", command);
-	  }
-	}
-	else if(strstr(command, ".") == command){
-	  char absolute_path[PATH_MAX];
+	if(strstr(command, "/") == command || strstr(command, ".") == command){
+	  //command is either an absolute path or relative path
 	  
-	  //realpath(command, absolute_path);
-	  if(realpath(command, absolute_path) == NULL){
-	    printf("Command not found after parsing: %s\n", command);
+	  if(strstr(command, ".") == command){
+	    //if it's a relative path, we need to pass in our current directory
+	    //into realpath()
+	    //otherwise, realpath() will default to the current directory of the main terminal,
+	    //which we don't want
+
+	    //char buffer[(int) strlen(command) + (int) strlen(currentdir) + 1];
+
+	    char *buffer;
+	    buffer = malloc(sizeof(char) * ((int) strlen(command) + (int) strlen(currentdir) + 1));
+
+	    strcpy(buffer, currentdir);
+	    strcat(buffer, "/");
+	    strcat(buffer, command);
+	    
+	    free(command);
+	    command = buffer;
+	    //printf("%s\n", command);
+	  }
+
+	  //printf("%s\n", command);
+
+	  char path_resolved[PATH_MAX];
+	  if(realpath(command, path_resolved) == NULL){
+	    printf("Executable not found after parsing: %s\n", command);
 	  }
 	  else{
-
-	    if(access(absolute_path, X_OK) == 0){
+	    if(access(path_resolved, X_OK) == 0){
 	      pid_t pid;
 	      pid = fork();
+	      
 	      if(pid < 0){
-		perror("Error while forking");
 		exit(1);
 	      }
 	      else if(pid == 0){
 		pid_t mypid = getpid();
-		if(execve(absolute_path, args, envp) == -1){
-		  printf("killing child...\n");
+		printf("Executing [%s]\n", path_resolved);
+		if(execve(path_resolved, args, envp) == -1){
+		  printf("[%s] is a directory, not an executable\n", path_resolved);
 		  kill(mypid, SIGKILL);
 		}
 	      }
@@ -158,14 +153,8 @@ int sh( int argc, char **argv, char **envp )
 		waitpid(pid, NULL, 0);
 	      }
 	    }
-	    else{
-	      printf("[%s] is a directory, not an executable\n", absolute_path);
-	    }
-
-	    printf("Command found: %s\n", absolute_path);
 	  }
 	  
-
 	}
 	else{
 	  
@@ -184,6 +173,7 @@ int sh( int argc, char **argv, char **envp )
 	    }
 	    else if(pid == 0){
 	      pid_t mypid = getpid();
+	      printf("Executing [%s]\n", tmp);
 	      if(execve(tmp, args, envp) == -1){
 		printf("killing child...\n");
 		kill(mypid, SIGKILL);
