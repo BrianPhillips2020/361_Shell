@@ -118,14 +118,6 @@ int sh( int argc, char **argv, char **envp )
 	    else if(pid == 0){
 	      pid_t mypid = getpid();
 
-	      //printf("passing argument %s\n", args[0]);
-	      
-
-	      for(int j = 0; args[j] != NULL; j++){
-		printf("passing arg %s\n", args[j]);
-	      }
-
-
 	      if(execve(command, args, envp) == -1){
 		printf("killing child...\n");
 		kill(mypid, SIGKILL);
@@ -134,12 +126,46 @@ int sh( int argc, char **argv, char **envp )
 	    else{
 	      waitpid(pid, NULL, 0);
 	    }
-	    
-	    //execute command
 	  }
 	  else{
-	    //command not found
+	    printf("Command not found at location: %s\n", command);
 	  }
+	}
+	else if(strstr(command, ".") == command){
+	  char absolute_path[PATH_MAX];
+	  
+	  //realpath(command, absolute_path);
+	  if(realpath(command, absolute_path) == NULL){
+	    printf("Command not found after parsing: %s\n", command);
+	  }
+	  else{
+
+	    if(access(absolute_path, X_OK) == 0){
+	      pid_t pid;
+	      pid = fork();
+	      if(pid < 0){
+		perror("Error while forking");
+		exit(1);
+	      }
+	      else if(pid == 0){
+		pid_t mypid = getpid();
+		if(execve(absolute_path, args, envp) == -1){
+		  printf("killing child...\n");
+		  kill(mypid, SIGKILL);
+		}
+	      }
+	      else{
+		waitpid(pid, NULL, 0);
+	      }
+	    }
+	    else{
+	      printf("[%s] is a directory, not an executable\n", absolute_path);
+	    }
+
+	    printf("Command found: %s\n", absolute_path);
+	  }
+	  
+
 	}
 	else{
 	  
@@ -199,7 +225,6 @@ char *which(char *command, struct pathelement *pathlist )
 
   while(p){
     int size = (int) strlen(p->element) + (int) strlen(command) + 1;
-    //char tmp[size];
     char *tmp = malloc(size * sizeof(char));
     strcpy(tmp, p->element);
     strcat(tmp, "/");
