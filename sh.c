@@ -53,22 +53,10 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = 256;
   char buffer[buffersize];
 
-  // struct pathelement *tmp;
-  //tmp = pathlist;
-  //while(tmp->next != NULL){
-  //printf("directory: %s\n", tmp->element);
-  //tmp = tmp->next;
-  //}
-
 
 
   while ( go )
     {
-
-      //printf("value of args[0] = %s\n", args[0]);
-      //printf("value of args[1] = %s\n", args[1]);
-
-
 
       /* print your prompt */
       printf("\n(361)%s >> ", homedir);
@@ -78,75 +66,122 @@ int sh( int argc, char **argv, char **envp )
 
       char *token;
       token = strtok(buffer, " ");
-      
-      for(i = 0; token != NULL; token = strtok(NULL, " ")){
+
+      if(token != NULL){
+	command = malloc(sizeof(char) * (int) strlen(token));
+	strcpy(command, token);
+      }
+      else{
+	//printf("allocating 0\n");
+	command = malloc(0);
+      }
+      token = strtok(NULL, " ");
+
+      args[0] = malloc(sizeof(char));
+      args[0] = "";
+      for(i = 1; token != NULL; token = strtok(NULL, " ")){
+	printf("allocating args\n");
 	args[i] = malloc(sizeof(char) * (int) strlen(token));
 	strcpy(args[i], token);
 	i++;
       }
-      if(args[0] == NULL)
-	args[0] = malloc(0);
-
-      for(int j = 0; j < i; j++){
-	printf("argument %d: %s\n", j, args[j]);
+      
+      for(int j = 1; j < i; j++){
+	//printf("argument %d: %s\n", j, args[j]);
       }
       
       /* check for each built in command and implement */
-      if(strcmp(args[0], "exit") == 0){
+      if((int) strlen(command) == 0){
+	//don't do anything
+      }
+      else if(strcmp(command, "exit") == 0){
 	go = 0;
 	printf("Closing shell...\n\n\n");
       }
       else{
 	//else program to exec
 	
-	char *tmp = which(args[0], pathlist);
-	
-	//execve(tmp, &args[1], envp);
+	char *checker = NULL;
+	checker = strstr(command, "/");
 
-	if(tmp != NULL){
-	  //printf("Command found in: %s\n", tmp);
-	  
-	  pid_t pid;
-	  pid = fork();
-	  
-	  if(pid < 0){
-	    perror("Error when forking");
-	  }
-	  else if(pid == 0){
-	    pid_t mypid = getpid();
-	    if(execve(tmp, &args[1], envp) == -1){
-	      kill(mypid, SIGKILL);
+	if(strstr(command, "/") == command){
+	  printf("command starts with /\n");
+	  if(access(command, X_OK) == 0){
+	    printf("found command\n");
+	    
+	    pid_t pid;
+	    pid = fork();
+
+	    if(pid < 0){
+	      exit(1);
 	    }
+	    else if(pid == 0){
+	      pid_t mypid = getpid();
+
+	      //printf("passing argument %s\n", args[0]);
+	      
+
+	      for(int j = 0; args[j] != NULL; j++){
+		printf("passing arg %s\n", args[j]);
+	      }
+
+
+	      if(execve(command, args, envp) == -1){
+		printf("killing child...\n");
+		kill(mypid, SIGKILL);
+	      }
+	    }
+	    else{
+	      waitpid(pid, NULL, 0);
+	    }
+	    
+	    //execute command
 	  }
 	  else{
-	    waitpid(pid, NULL, 0);
-	    //pid_t mypid = getpid();
-	    //printf("hello from parent %d\n", mypid);
-
-	    printf("parent reactivated\n");
-
+	    //command not found
 	  }
-
-
 	}
-	else if((int) strlen(args[0]) != 0){
-	  printf("%s: Command not found\n", args[0]);
+	else{
+	  
 
+
+	  char *tmp = which(command, pathlist);
+
+	  if(tmp != NULL){
+	  
+	    pid_t pid;
+	    pid = fork();
+	    
+	    if(pid < 0){
+	      perror("Error when forking");
+	      exit(1);
+	    }
+	    else if(pid == 0){
+	      pid_t mypid = getpid();
+	      if(execve(tmp, args, envp) == -1){
+		printf("killing child...\n");
+		kill(mypid, SIGKILL);
+	      }
+	    }
+	    else{
+	      waitpid(pid, NULL, 0);
+	      //printf("parent reactivated\n");
+	      
+	    }
+	    
+	    
+	  }
+	  else{
+	    fprintf(stderr, "%s: Command not found\n", command);
+	  }
 	}
       }
 
 
 
-      /*  else  program to exec */
-      //{
-	/* find it */
-	/* do fork(), execve() and waitpid() */
 
-	//else
-	//fprintf(stderr, "%s: Command not found.\n", args[0]);
-	//}
-
-      
+      command = NULL;
+      free(command);
       for(int j = 0; j < i; j++){
 	args[j] = NULL;
 	free(args[j]);
