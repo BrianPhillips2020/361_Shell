@@ -40,12 +40,7 @@ int sh( int argc, char **argv, char **envp )
   //char currentdir[PATH_MAX];
   currentdir = malloc(sizeof(char) * PATH_MAX);
   strcpy(currentdir, homedir);
-  
-  if(chdir(currentdir) == 0){
-    printf("directory change success!\n");
-  }
-
-  printf("currentdir: %s\n", currentdir);
+  chdir(currentdir);
 
 
   if ( (pwd = getcwd(NULL, PATH_MAX+1)) == NULL )
@@ -108,8 +103,11 @@ int sh( int argc, char **argv, char **envp )
 	printf("Closing shell...\n\n\n");
       }
       else if(strcmp(command, "cd") == 0){
-	if(args[1] != NULL){
-	  //printf("wtf\n");
+	if(args[1] != NULL && strcmp(args[1], "-") == 0){
+	  strcpy(currentdir, homedir);
+	  chdir(homedir);
+	}
+	else if(args[1] != NULL){
 	  char path_resolved[PATH_MAX];
 	  if(realpath(args[1], path_resolved) == NULL){
 	    printf("weird error\n");
@@ -236,7 +234,6 @@ char *which(char *command, struct pathelement *pathlist )
 {
   struct pathelement *p = pathlist;
   
-
   while(p){
     int size = (int) strlen(p->element) + (int) strlen(command) + 1;
     char *tmp = malloc(size * sizeof(char));
@@ -244,19 +241,12 @@ char *which(char *command, struct pathelement *pathlist )
     strcat(tmp, "/");
     strcat(tmp, command);
 
-    if(access(tmp, F_OK) == 0){
-      //printf("returning %s\n", tmp);
+    if(access(tmp, X_OK) == 0){
       return tmp;
     }
     p = p->next;
   }
-  
-  
-
   return NULL;
-  /* loop through pathlist until finding command and return it.  Return
-     NULL when not found. */
-
 } /* which() */
 
 char *where(char *command, struct pathelement *pathlist )
