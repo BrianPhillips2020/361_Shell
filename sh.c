@@ -25,7 +25,7 @@ int sh( int argc, char **argv, char **envp )
 {
   char *prompt = calloc(PROMPTMAX, sizeof(char));
   char *commandline = calloc(MAX_CANON, sizeof(char));
-  char *command, *arg, *commandpath, *p, *pwd, *owd;
+  char *command, *arg, *currentdir, *p, *pwd, *owd;
   char **args = calloc(MAXARGS, sizeof(char*));
   int uid, i, status, argsct, go = 1;
   struct passwd *password_entry;
@@ -37,8 +37,14 @@ int sh( int argc, char **argv, char **envp )
   homedir = password_entry->pw_dir;/* Home directory to start
 				      out with*/
 
-  char currentdir[PATH_MAX];
+  //char currentdir[PATH_MAX];
+  currentdir = malloc(sizeof(char) * PATH_MAX);
   strcpy(currentdir, homedir);
+  
+  if(chdir(currentdir) == 0){
+    printf("directory change success!\n");
+  }
+
   printf("currentdir: %s\n", currentdir);
 
 
@@ -58,13 +64,13 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = 256;
   char buffer[buffersize];
 
-
+  strcpy(prompt, "(361)");
 
   while ( go )
     {
 
       /* print your prompt */
-      printf("\n(361)%s >> ", homedir);
+      printf("\n%s%s >> ", prompt, currentdir);
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
       buffer[(int) strlen(buffer) - 1] = '\0';
@@ -87,7 +93,7 @@ int sh( int argc, char **argv, char **envp )
       //because programs assume argv[0] is the program name itself, args[0]
       //cannot be an actual argument, just the program name
       for(i = 1; token != NULL; token = strtok(NULL, " ")){
-	printf("allocating args\n");
+	//printf("allocating args\n");
 	args[i] = malloc(sizeof(char) * (int) strlen(token));
 	strcpy(args[i], token);
 	i++;
@@ -101,33 +107,51 @@ int sh( int argc, char **argv, char **envp )
 	go = 0;
 	printf("Closing shell...\n\n\n");
       }
+      else if(strcmp(command, "cd") == 0){
+	if(args[1] != NULL){
+	  //printf("wtf\n");
+	  char path_resolved[PATH_MAX];
+	  if(realpath(args[1], path_resolved) == NULL){
+	    printf("weird error\n");
+	  }
+	  else{
+	    strcpy(currentdir, path_resolved);
+	    chdir(currentdir);
+	  }
+	}
+	else{
+	  char path_resolved[PATH_MAX];
+	  if(realpath("..", path_resolved) == NULL){
+	    printf("weird error\n");
+	  }
+	  else{
+	    strcpy(currentdir, path_resolved);
+	    chdir(currentdir);
+	  }
+	}
+      }
+      else if(strcmp(command, "prompt") == 0){
+	if(args[1] == NULL){
+	  printf("Enter prompt prefix: ");
+	  char tmp[PROMPTMAX];
+	  fgets(tmp, PROMPTMAX, stdin);
+	  tmp[(int) strlen(tmp) - 1] = '\0';
+	  strcpy(prompt, tmp);
+	}
+	else{
+	  strcpy(prompt, args[1]);
+	}
+      }
+      else if(strcmp(command, "pid") == 0){
+	printf("PID: %d\n", getpid());
+      }
       else{
 	//else program to exec
 
 	if(strstr(command, "/") == command || strstr(command, ".") == command){
 	  //command is either an absolute path or relative path
-	  
-	  if(strstr(command, ".") == command){
-	    //if it's a relative path, we need to pass in our current directory
-	    //into realpath()
-	    //otherwise, realpath() will default to the current directory of the main terminal,
-	    //which we don't want
+	
 
-	    //char buffer[(int) strlen(command) + (int) strlen(currentdir) + 1];
-
-	    char *buffer;
-	    buffer = malloc(sizeof(char) * ((int) strlen(command) + (int) strlen(currentdir) + 1));
-
-	    strcpy(buffer, currentdir);
-	    strcat(buffer, "/");
-	    strcat(buffer, command);
-	    
-	    free(command);
-	    command = buffer;
-	    //printf("%s\n", command);
-	  }
-
-	  //printf("%s\n", command);
 
 	  char path_resolved[PATH_MAX];
 	  if(realpath(command, path_resolved) == NULL){
