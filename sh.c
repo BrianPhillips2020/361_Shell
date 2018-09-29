@@ -134,6 +134,41 @@ int sh( int argc, char **argv, char **envp )
 	printf("[%s]\n", tmp);
 	free(tmp);
       }
+      else if(strcmp(command, "list") == 0){
+	if(args[1] == NULL){
+	  DIR *p_dir = opendir(".");
+	  if(p_dir == NULL){
+	    printf("error opening dir\n");
+	  }
+	  else{
+	    struct dirent *tmp;
+	    while((tmp = readdir(p_dir)) != NULL){
+	      if(strstr(tmp->d_name, ".") != tmp->d_name){
+		printf("%s\n", tmp->d_name);
+	      }
+	    }
+	  }
+	  closedir(p_dir);
+	}
+	else{
+	  for(int i = 1; args[i] != NULL; i++){
+	    DIR *p_dir = opendir(args[i]);
+	    if(p_dir == NULL){
+	      printf("erorr opening dir: %s\n", args[i]);
+	    }
+	    else{
+	      struct dirent *tmp;
+	      while((tmp = readdir(p_dir)) != NULL){
+
+		if(strstr(tmp->d_name, ".") != tmp->d_name){
+		  printf("%s\n", tmp->d_name);
+		}
+	      }
+	    }
+	    closedir(p_dir);
+	  }
+	}
+      }
       else if(strcmp(command, "prompt") == 0){
 	if(args[1] == NULL){
 	  printf("Enter prompt prefix: ");
