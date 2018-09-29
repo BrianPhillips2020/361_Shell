@@ -36,18 +36,17 @@ int sh( int argc, char **argv, char **envp )
   password_entry = getpwuid(uid);               /* get passwd info */
   homedir = password_entry->pw_dir;/* Home directory to start
 				      out with*/
-
-  //char currentdir[PATH_MAX];
+  
+  
   currentdir = malloc(sizeof(char) * PATH_MAX);
   strcpy(currentdir, homedir);
   chdir(currentdir);
 
 
-  if ( (pwd = getcwd(NULL, PATH_MAX+1)) == NULL )
-    {
-      perror("getcwd");
-      exit(2);
-    }
+  if((pwd = getcwd(NULL, PATH_MAX+1)) == NULL){
+    perror("getcwd");
+    exit(2);
+  }
   owd = calloc(strlen(pwd) + 1, sizeof(char));
   memcpy(owd, pwd, strlen(pwd));
   prompt[0] = ' '; prompt[1] = '\0';
@@ -56,23 +55,23 @@ int sh( int argc, char **argv, char **envp )
   pathlist = get_path();
 
 
-  int buffersize = 256;
+  int buffersize = PROMPTMAX;
   char buffer[buffersize];
 
   strcpy(prompt, "(361)");
 
-  while ( go )
+  while (go)
     {
-
-      /* print your prompt */
       printf("\n%s%s >> ", prompt, currentdir);
+     
+
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
       buffer[(int) strlen(buffer) - 1] = '\0';
 
       char *token;
       token = strtok(buffer, " ");
-
+      //the first part of the user input is the command, and technically the first argument
       if(token != NULL){
 	command = malloc(sizeof(char) * (int) strlen(token));
 	args[0] = malloc(sizeof(char) * (int) strlen(token));
@@ -80,7 +79,7 @@ int sh( int argc, char **argv, char **envp )
 	strcpy(args[0], token);
       }
       else{
-	command = malloc(0);
+	command = malloc(0);//if the user doesn't input anything, just malloc() 0 bytes
       }
       token = strtok(NULL, " ");
       
@@ -88,45 +87,22 @@ int sh( int argc, char **argv, char **envp )
       //because programs assume argv[0] is the program name itself, args[0]
       //cannot be an actual argument, just the program name
       for(i = 1; token != NULL; token = strtok(NULL, " ")){
-	//printf("allocating args\n");
 	args[i] = malloc(sizeof(char) * (int) strlen(token));
 	strcpy(args[i], token);
 	i++;
       }
       
-      /* check for each built in command and implement */
+      //check for each builtin command
+      //some commands are separate functions because they're long
       if((int) strlen(command) == 0){
-	//don't do anything
+	//if the user didn't input anything, don't do anything
       }
       else if(strcmp(command, "exit") == 0){
 	go = 0;
 	printf("Closing shell...\n\n\n");
       }
       else if(strcmp(command, "cd") == 0){
-	if(args[1] != NULL && strcmp(args[1], "-") == 0){
-	  strcpy(currentdir, homedir);
-	  chdir(homedir);
-	}
-	else if(args[1] != NULL){
-	  char path_resolved[PATH_MAX];
-	  if(realpath(args[1], path_resolved) == NULL){
-	    printf("weird error\n");
-	  }
-	  else{
-	    strcpy(currentdir, path_resolved);
-	    chdir(currentdir);
-	  }
-	}
-	else{
-	  char path_resolved[PATH_MAX];
-	  if(realpath("..", path_resolved) == NULL){
-	    printf("weird error\n");
-	  }
-	  else{
-	    strcpy(currentdir, path_resolved);
-	    chdir(currentdir);
-	  }
-	}
+	cd(command, args, homedir, currentdir);
       }
       else if(strcmp(command, "pwd") == 0){
 	char *tmp;
@@ -135,39 +111,7 @@ int sh( int argc, char **argv, char **envp )
 	free(tmp);
       }
       else if(strcmp(command, "list") == 0){
-	if(args[1] == NULL){
-	  DIR *p_dir = opendir(".");
-	  if(p_dir == NULL){
-	    printf("error opening dir\n");
-	  }
-	  else{
-	    struct dirent *tmp;
-	    while((tmp = readdir(p_dir)) != NULL){
-	      if(strstr(tmp->d_name, ".") != tmp->d_name){
-		printf("%s\n", tmp->d_name);
-	      }
-	    }
-	  }
-	  closedir(p_dir);
-	}
-	else{
-	  for(int i = 1; args[i] != NULL; i++){
-	    DIR *p_dir = opendir(args[i]);
-	    if(p_dir == NULL){
-	      printf("erorr opening dir: %s\n", args[i]);
-	    }
-	    else{
-	      struct dirent *tmp;
-	      while((tmp = readdir(p_dir)) != NULL){
-
-		if(strstr(tmp->d_name, ".") != tmp->d_name){
-		  printf("%s\n", tmp->d_name);
-		}
-	      }
-	    }
-	    closedir(p_dir);
-	  }
-	}
+	list(command, args);
       }
       else if(strcmp(command, "prompt") == 0){
 	if(args[1] == NULL){
@@ -184,78 +128,9 @@ int sh( int argc, char **argv, char **envp )
       else if(strcmp(command, "pid") == 0){
 	printf("PID: %d\n", getpid());
       }
-      else{
-	//else program to exec
-
-	if(strstr(command, "/") == command || strstr(command, ".") == command){
-	  //command is either an absolute path or relative path
-	
-
-
-	  char path_resolved[PATH_MAX];
-	  if(realpath(command, path_resolved) == NULL){
-	    printf("Executable not found after parsing: %s\n", command);
-	  }
-	  else{
-	    if(access(path_resolved, X_OK) == 0){
-	      pid_t pid;
-	      pid = fork();
-	      
-	      if(pid < 0){
-		exit(1);
-	      }
-	      else if(pid == 0){
-		pid_t mypid = getpid();
-		printf("Executing [%s]\n", path_resolved);
-		if(execve(path_resolved, args, envp) == -1){
-		  printf("[%s] is a directory, not an executable\n", path_resolved);
-		  kill(mypid, SIGKILL);
-		}
-	      }
-	      else{
-		waitpid(pid, NULL, 0);
-	      }
-	    }
-	  }
-	  
-	}
-	else{
-	  
-
-
-	  char *tmp = which(command, pathlist);
-
-	  if(tmp != NULL){
-	  
-	    pid_t pid;
-	    pid = fork();
-	    
-	    if(pid < 0){
-	      perror("Error when forking");
-	      exit(1);
-	    }
-	    else if(pid == 0){
-	      pid_t mypid = getpid();
-	      printf("Executing [%s]\n", tmp);
-	      if(execve(tmp, args, envp) == -1){
-		printf("killing child...\n");
-		kill(mypid, SIGKILL);
-	      }
-	    }
-	    else{
-	      waitpid(pid, NULL, 0);
-	      //printf("parent reactivated\n");
-	      
-	    }
-	    
-	    
-	  }
-	  else{
-	    fprintf(stderr, "%s: Command not found\n", command);
-	  }
-	}
+      else{//if it's not a builtin command, it's either an external command or not valid
+	execute_command(command, args, envp, pathlist);
       }
-
 
 
 
@@ -266,8 +141,13 @@ int sh( int argc, char **argv, char **envp )
 	free(args[j]);
       }
     }
+
+  free(prompt);
+  free(commandline);
+  free(args);
+  free(currentdir);
   return 0;
-} /* sh() */
+}
 
 
 
@@ -288,20 +168,163 @@ char *which(char *command, struct pathelement *pathlist )
     p = p->next;
   }
   return NULL;
-} /* which() */
+}
 
 char *where(char *command, struct pathelement *pathlist )
 {
   return NULL;
   /* similarly loop through finding all locations of command */
-} /* where() */
+}
 
-void list ( char *dir )
-{
-
-  if(dir == NULL){
-    printf("hello!\n");
+//changes directory, outputting new directory to currentdir and chdir()
+//returns 0 on success (or incorrect command usage), -1 on fail
+int cd(char *command, char **args, char *homedir, char *currentdir){
+  if(args[2] != NULL){
+    printf("Usage for cd: cd [directory]\n");
+    return 0;
   }
-  /* see man page for opendir() and readdir() and print out filenames for
-     the directory passed */
-} /* list() */
+  if(args[1] != NULL && strcmp(args[1], "-") == 0){
+    strcpy(currentdir, homedir);
+    chdir(homedir);
+  }
+  else if(args[1] != NULL){
+    char path_resolved[PATH_MAX];
+    if(realpath(args[1], path_resolved) == NULL){
+      perror("Directory not found");
+      return -1;
+    }
+    else{
+      strcpy(currentdir, path_resolved);
+      chdir(currentdir);
+    }
+  }
+  else{
+    char path_resolved[PATH_MAX];
+    if(realpath("..", path_resolved) == NULL){
+      perror("Directory not found");
+      return -1;
+    }
+    else{
+      strcpy(currentdir, path_resolved);
+      chdir(currentdir);
+    }
+  }
+  return 0;
+}
+
+//lists everything in each specified folder, or in current directory if none specified
+//returns 0 on success, -1 on fail
+int list (char *command, char **args)
+{
+  if(args[1] == NULL){
+    DIR *p_dir = opendir(".");
+    if(p_dir == NULL){
+      perror("Error opening directory");
+      return -1;
+    }
+    else{
+      struct dirent *tmp;
+      printf("[ %s ]\n", args[1]);
+      while((tmp = readdir(p_dir)) != NULL){
+	if(strstr(tmp->d_name, ".") != tmp->d_name){
+	  printf("%s\n", tmp->d_name);
+	}
+      }
+    }
+    closedir(p_dir);
+  }
+  else{
+    for(int i = 1; args[i] != NULL; i++){
+      DIR *p_dir = opendir(args[i]);
+      if(p_dir == NULL){
+	perror("Error opening directory");
+	return -1;
+      }
+      else{
+	struct dirent *tmp;
+	printf("[ %s ]\n", args[i]);
+	while((tmp = readdir(p_dir)) != NULL){
+	  if(strstr(tmp->d_name, ".") != tmp->d_name){
+	    printf("%s\n", tmp->d_name);
+	  }
+	}
+      }
+      closedir(p_dir);
+    }
+  }
+  return 0;
+}
+
+//executes external command, either specified by PATH or if command is a directory
+int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist){
+  if(strstr(command, "/") == command || strstr(command, ".") == command){
+    //command is either an absolute path or relative path                                     
+
+    char path_resolved[PATH_MAX];
+    if(realpath(command, path_resolved) == NULL){
+      perror("Executable not found");
+      return -1;
+    }
+    else{
+      if(access(path_resolved, X_OK) == 0){
+	pid_t pid;
+	pid = fork();
+
+	if(pid < 0){
+	  perror("Error forking");
+	  exit(1);
+	}
+	else if(pid == 0){
+	  pid_t mypid = getpid();
+	  printf("Executing [%s]\n", path_resolved);
+	  if(execve(path_resolved, args, envp) == -1){
+	    perror("Could not execute program");
+	    kill(mypid, SIGKILL);
+	    return -1;
+	  }
+	}
+	else{
+	  waitpid(pid, NULL, 0);
+	}
+      }
+      else{
+	perror("Could not access executable");
+	return -1;
+      }
+    }
+
+  }
+  else{
+
+    char *tmp = which(command, pathlist);
+    if(tmp != NULL){
+
+      pid_t pid;
+      pid = fork();
+
+      if(pid < 0){
+	perror("Error when forking");
+	exit(1);
+      }
+      else if(pid == 0){
+	pid_t mypid = getpid();
+	printf("Executing [%s]\n", tmp);
+	if(execve(tmp, args, envp) == -1){
+	  perror("Killing child process");
+	  kill(mypid, SIGKILL);
+	  return -1;
+	}
+      }
+      else{
+	waitpid(pid, NULL, 0);
+      }
+
+
+    }
+    else{
+      printf("%s: Command not found", command);
+    }
+  }
+  return 0;
+}
+
