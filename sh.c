@@ -128,6 +128,12 @@ int sh( int argc, char **argv, char **envp )
 	  }
 	}
       }
+      else if(strcmp(command, "pwd") == 0){
+	char *tmp;
+	tmp = getcwd(NULL, 0);
+	printf("[%s]\n", tmp);
+	free(tmp);
+      }
       else if(strcmp(command, "prompt") == 0){
 	if(args[1] == NULL){
 	  printf("Enter prompt prefix: ");
