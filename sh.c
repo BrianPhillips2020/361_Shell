@@ -113,7 +113,7 @@ int sh( int argc, char **argv, char **envp )
 	free(tmp);
       }
       else if(strcmp(command, "list") == 0){
-	list(command, args);
+	list(command, args, currentdir);
       }
       else if(strcmp(command, "prompt") == 0){
 	if(args[1] == NULL){
@@ -221,7 +221,7 @@ int cd(char *command, char **args, char *homedir, char *currentdir){
 
 //lists everything in each specified folder, or in current directory if none specified
 //returns 0 on success, -1 on fail
-int list (char *command, char **args)
+int list (char *command, char **args, char *currentdir)
 {
   if(args[1] == NULL){
     DIR *p_dir = opendir(".");
@@ -231,7 +231,7 @@ int list (char *command, char **args)
     }
     else{
       struct dirent *tmp;
-      printf("[ %s ]\n", args[1]);
+      printf("[ %s ]\n", currentdir);
       while((tmp = readdir(p_dir)) != NULL){
 	if(strstr(tmp->d_name, ".") != tmp->d_name){
 	  printf("%s\n", tmp->d_name);
