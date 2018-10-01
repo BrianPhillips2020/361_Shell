@@ -11,5 +11,14 @@ int list(char *command, char **args, char *currentdir);
 int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist);
 int killsig(char *command, char **args);
 
+
+struct history{
+
+  char *commandline;
+  struct history *next;
+  struct history *prev;
+};
+
+
 #define PROMPTMAX 32
 #define MAXARGS 10

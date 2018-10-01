@@ -23,6 +23,8 @@ Brian Phillips
 
 extern pid_t c_pid;
 
+
+
 int sh( int argc, char **argv, char **envp )
 {
   char *prompt = calloc(PROMPTMAX, sizeof(char));
@@ -56,6 +58,11 @@ int sh( int argc, char **argv, char **envp )
   /* Put PATH into a linked list */
   pathlist = get_path();
 
+
+  struct history *histhead = NULL;
+  struct history *histtail = NULL;
+  int history_length = 10;
+  int current_length = 0;
 
   int buffersize = PROMPTMAX;
   char buffer[buffersize];
@@ -94,6 +101,45 @@ int sh( int argc, char **argv, char **envp )
 	i++;
       }
       
+      if((int) strlen(command) != 0){
+	if(current_length == 0){
+	  printf("inserting a new head\n");
+	  histhead = malloc(sizeof(struct history));
+	  histhead->commandline = malloc(sizeof(char) * strlen(buffer));
+	  strcpy(histhead->commandline, buffer);
+	  histtail = histhead;
+	  histhead->next = NULL;
+	  histhead->prev = NULL;
+	  current_length++;
+	}/*
+	else if(current_length == history_length){
+	  printf("max size\n");
+	  struct history *tmp;
+	  tmp = malloc(sizeof(struct history));
+	  tmp->commandline = malloc(sizeof(char) * strlen(buffer));
+	  strcpy(tmp->commandline, buffer);
+	  tmp->next = histhead;
+	  histhead->prev = tmp;
+	  histhead = tmp;
+	  tmp = histtail;
+	  histtail = histtail->prev;
+	  histtail->next = NULL;
+	  free(tmp);
+	  }*/
+	else{
+	  //printf("nice\n");
+	  struct history *tmp;
+	  tmp = malloc(sizeof(struct history));
+	  tmp->commandline = malloc(sizeof(char) * strlen(buffer));
+	  strcpy(tmp->commandline, buffer);
+	  tmp->next = histhead;
+	  tmp->prev = NULL;
+	  histhead->prev = tmp;
+	  histhead = tmp;
+	  current_length++;
+	}
+      }
+
       //check for each builtin command
       //some commands are separate functions because they're long
       if((int) strlen(command) == 0){
@@ -132,6 +178,46 @@ int sh( int argc, char **argv, char **envp )
       }
       else if(strcmp(command, "kill") == 0){
 	killsig(command, args);
+      }
+      else if(strcmp(command, "which") == 0){
+	if(args[1] != NULL){
+	  for(int j = 1; args[j] != NULL; j++){
+	    char *tmp = which(args[j], pathlist);
+	    if(tmp == NULL){
+	      perror("Command not found");
+	    }
+	    else{
+	      printf("%s\n", tmp);
+	    }
+	    free(tmp);
+	  }
+	}
+	else{
+	  printf("Usage for which: which [command1] ...\n");
+	}
+      }
+      else if(strcmp(command, "where") == 0){
+	if(args[1] != NULL){
+	  for(int j = 1; args[j] != NULL; j++){
+	    where(args[j], pathlist);
+	  }
+	}
+	else{
+	  printf("Usage for where: where [command1] ...\n");
+	}
+      }
+      else if(strcmp(command, "history") == 0){
+	struct history *tmp = histhead;
+	int i = 0;
+	int total = 10;
+	if(args[1] != NULL){
+	  total = (int) atoi(args[1]);
+	}
+	while(tmp != NULL && i < total){
+	  printf("%s\n", tmp->commandline);
+	  tmp = tmp->next;
+	  i++;
+	}
       }
       else{//if it's not a builtin command, it's either an external command or not valid
 	execute_command(command, args, envp, pathlist);
@@ -179,6 +265,28 @@ char *which(char *command, struct pathelement *pathlist )
 
 char *where(char *command, struct pathelement *pathlist )
 {
+  int found = 0;
+  struct pathelement *p = pathlist;
+  while(p){
+    int size = (int) strlen(p->element) + (int) strlen(command) + 1;
+    char *tmp = malloc(size * sizeof(char));
+    strcpy(tmp, p->element);
+    strcat(tmp, "/");
+    strcat(tmp, command);
+    
+    if(access(tmp, X_OK) == 0){
+      printf("%s\n",tmp);
+      found = 1;
+    }
+    p = p->next;
+    free(tmp);
+  }
+
+  if(found == 0){
+    printf("%s not found\n", command);
+  }
+
+
   return NULL;
   /* similarly loop through finding all locations of command */
 }
