@@ -9,7 +9,7 @@ int strcmp_ignore_case(char const *a, char const *b);
 int cd(char *command, char **args, char *homedir, char *currentdir);
 int list(char *command, char **args);
 int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist);
-
+int killsig(char *command, char **args);
 
 #define PROMPTMAX 32
 #define MAXARGS 10

@@ -21,6 +21,8 @@ Brian Phillips
 #include <signal.h>
 #include "sh.h"
 
+extern pid_t c_pid;
+
 int sh( int argc, char **argv, char **envp )
 {
   char *prompt = calloc(PROMPTMAX, sizeof(char));
@@ -128,6 +130,9 @@ int sh( int argc, char **argv, char **envp )
       else if(strcmp(command, "pid") == 0){
 	printf("PID: %d\n", getpid());
       }
+      else if(strcmp(command, "kill") == 0){
+	killsig(command, args);
+      }
       else{//if it's not a builtin command, it's either an external command or not valid
 	execute_command(command, args, envp, pathlist);
       }
@@ -146,6 +151,8 @@ int sh( int argc, char **argv, char **envp )
   free(commandline);
   free(args);
   free(currentdir);
+  free(owd);
+  free(pwd);
   return 0;
 }
 
@@ -276,6 +283,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	}
 	else if(pid == 0){
 	  pid_t mypid = getpid();
+	  printf("child pid: %d\n", mypid);
 	  printf("Executing [%s]\n", path_resolved);
 	  if(execve(path_resolved, args, envp) == -1){
 	    perror("Could not execute program");
@@ -311,6 +319,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	printf("Executing [%s]\n", tmp);
 	if(execve(tmp, args, envp) == -1){
 	  perror("Killing child process");
+	  free(tmp);
 	  kill(mypid, SIGKILL);
 	  return -1;
 	}
@@ -324,7 +333,37 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
     else{
       printf("%s: Command not found", command);
     }
+    free(tmp);
   }
   return 0;
 }
 
+int killsig(char *command, char **args){
+  if(args[1] == NULL){
+    printf("Usage for kill: kill [-signal_number] [pid]\n(signal_number is optional)\n");
+    return -1;
+  }
+  else if(args[2] == NULL){//only one argument, stored in args[1], a pid
+    int pid = atoi(args[1]);
+    if(kill(pid, SIGTERM) == -1){
+      perror("Error killing process");
+      return -1;
+    }
+  }
+  else{
+    int signal = atoi(args[0]+1);
+    if(signal > 31){
+      signal = 0;
+    }
+    char **p_args = args+1;
+    for(int i = 1; *p_args != NULL; i++){
+      int pid = atoi(args[i]);
+      if(kill(pid, signal) == -1){
+	perror("Error killing process");
+      }
+      p_args++;
+    }
+  }
+
+  return 0;
+}
