@@ -4,7 +4,7 @@
 
 void sig_handler(int signal);
 
-pid_t c_pid = 0;
+pid_t childpid = 0;
 
 int main( int argc, char **argv, char **envp )
 {
@@ -26,19 +26,21 @@ void sig_handler(int signal)
 {
   switch(signal){
   case SIGINT:
-    if(c_pid > 0){
-      printf("\n");
-      kill(c_pid, SIGINT);
+    if(childpid > 0){
+      printf("sigint\n");
+      kill(childpid, SIGINT);
     }
     break;
   case SIGALRM:
-    if(c_pid > 0){
-      kill(c_pid, SIGKILL);
+    printf("sigalrm\n");
+    if(childpid > 0){
+      kill(childpid, SIGKILL);
     }
     break;
   case SIGKILL:
-    if(c_pid > 0){
-      kill(c_pid, SIGKILL);
+    printf("sigkill\n");
+    if(childpid > 0){
+      kill(childpid, SIGKILL);
     }
   }
 }

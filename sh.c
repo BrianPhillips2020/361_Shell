@@ -21,7 +21,7 @@ Brian Phillips
 #include <signal.h>
 #include "sh.h"
 
-extern pid_t c_pid;
+extern pid_t childpid;
 
 
 
@@ -111,21 +111,7 @@ int sh( int argc, char **argv, char **envp )
 	  histhead->next = NULL;
 	  histhead->prev = NULL;
 	  current_length++;
-	}/*
-	else if(current_length == history_length){
-	  printf("max size\n");
-	  struct history *tmp;
-	  tmp = malloc(sizeof(struct history));
-	  tmp->commandline = malloc(sizeof(char) * strlen(buffer));
-	  strcpy(tmp->commandline, buffer);
-	  tmp->next = histhead;
-	  histhead->prev = tmp;
-	  histhead = tmp;
-	  tmp = histtail;
-	  histtail = histtail->prev;
-	  histtail->next = NULL;
-	  free(tmp);
-	  }*/
+	}
 	else{
 	  //printf("nice\n");
 	  struct history *tmp;
@@ -177,6 +163,7 @@ int sh( int argc, char **argv, char **envp )
 	printf("PID: %d\n", getpid());
       }
       else if(strcmp(command, "kill") == 0){
+	printf("wtf\n");
 	killsig(command, args);
       }
       else if(strcmp(command, "which") == 0){
@@ -392,14 +379,13 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
     }
     else{
       if(access(path_resolved, X_OK) == 0){
-	pid_t pid;
-	pid = fork();
+	childpid = fork();
 
-	if(pid < 0){
+	if(childpid < 0){
 	  perror("Error forking");
 	  exit(1);
 	}
-	else if(pid == 0){
+	else if(childpid == 0){
 	  pid_t mypid = getpid();
 	  printf("child pid: %d\n", mypid);
 	  printf("Executing [%s]\n", path_resolved);
@@ -410,8 +396,9 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	  }
 	}
 	else{
-	  waitpid(pid, NULL, 0);
+	  waitpid(childpid, NULL, 0);
 	}
+	childpid = 0;
       }
       else{
 	perror("Could not access executable");
@@ -425,14 +412,13 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
     char *tmp = which(command, pathlist);
     if(tmp != NULL){
 
-      pid_t pid;
-      pid = fork();
+      childpid = fork();
 
-      if(pid < 0){
+      if(childpid < 0){
 	perror("Error when forking");
 	exit(1);
       }
-      else if(pid == 0){
+      else if(childpid == 0){
 	pid_t mypid = getpid();
 	printf("Executing [%s]\n", tmp);
 	if(execve(tmp, args, envp) == -1){
@@ -443,9 +429,9 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	}
       }
       else{
-	waitpid(pid, NULL, 0);
+	waitpid(childpid, NULL, 0);
       }
-
+      childpid = 0;
 
     }
     else{
@@ -463,18 +449,21 @@ int killsig(char *command, char **args){
   }
   else if(args[2] == NULL){//only one argument, stored in args[1], a pid
     int pid = atoi(args[1]);
+    printf("hello\n");
     if(kill(pid, SIGTERM) == -1){
       perror("Error killing process");
       return -1;
     }
   }
   else{
-    int signal = atoi(args[0]+1);
+    printf("wow\n");
+    int signal = atoi(args[1]+1);
+    printf("%d\n", signal);
     if(signal > 31){
       signal = 0;
     }
-    char **p_args = args+1;
-    for(int i = 1; *p_args != NULL; i++){
+    char **p_args = &args[1]+1;
+    for(int i = 1; *p_args; i++){
       int pid = atoi(args[i]);
       if(kill(pid, signal) == -1){
 	perror("Error killing process");
