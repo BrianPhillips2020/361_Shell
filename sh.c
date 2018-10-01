@@ -202,11 +202,15 @@ int cd(char *command, char **args, char *homedir, char *currentdir){
     }
     else{
       //strcpy(currentdir, path_resolved);
-      if(chdir(currentdir) == -1){
-	perror("Could not change into specified directory");
+      if(chdir(path_resolved) == 0){
+	strcpy(currentdir, path_resolved);
+	//perror("Could not change into specified directory");
+	//return -1;
+      }
+      else{
 	return -1;
       }
-      strcpy(currentdir, path_resolved);
+      //strcpy(currentdir, path_resolved);
     }
   }
   else{
@@ -217,11 +221,15 @@ int cd(char *command, char **args, char *homedir, char *currentdir){
     }
     else{
       //strcpy(currentdir, path_resolved);
-      if(chdir(currentdir) == -1){
-	perror("Could not change into parent directory");
+      if(chdir(path_resolved) == 0){
+	strcpy(currentdir, path_resolved);
+	//perror("Could not change into parent directory");
+	//return -1;
+      }
+      else{
 	return -1;
       }
-      strcpy(currentdir, path_resolved);
+      //strcpy(currentdir, path_resolved);
     }
   }
   return 0;
