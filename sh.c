@@ -29,9 +29,9 @@ int sh( int argc, char **argv, char **envp )
 {
   char *prompt = calloc(PROMPTMAX, sizeof(char));
   char *commandline = calloc(MAX_CANON, sizeof(char));
-  char *command, *arg, *currentdir, *p, *pwd, *owd;
+  char *command, *arg, *currentdir, *previousdir, *pwd, *owd;
   char **args = calloc(MAXARGS, sizeof(char*));
-  int uid, i, status, argsct, go = 1;
+  int uid, i, go = 1;
   struct passwd *password_entry;
   char *homedir;
   struct pathelement *pathlist;
@@ -43,7 +43,9 @@ int sh( int argc, char **argv, char **envp )
   
   
   currentdir = malloc(sizeof(char) * PATH_MAX);
+  previousdir = malloc(sizeof(char) * PATH_MAX);
   strcpy(currentdir, homedir);
+  strcpy(previousdir, currentdir);
   chdir(currentdir);
 
 
@@ -64,9 +66,12 @@ int sh( int argc, char **argv, char **envp )
   int history_length = 10;
   int current_length = 0;
 
+  struct alias_entry *ahead = NULL;
+  struct alias_entry *atail = NULL;
+
   int buffersize = PROMPTMAX;
   char buffer[buffersize];
-
+  char tempbuffer[buffersize];
   strcpy(prompt, "(361)");
 
   while (go)
@@ -79,10 +84,31 @@ int sh( int argc, char **argv, char **envp )
       /* get command line and process */
       fgets(buffer, buffersize, stdin);
       buffer[(int) strlen(buffer) - 1] = '\0';
+      strcpy(tempbuffer, buffer);
+      char *tkn;
+      tkn = strtok(tempbuffer, " ");
+      //the first part of the user input is the command, and technically the first argument
+
+
+      //if we find an alias, overwrite buffer with the alias's command
+      //the reason we need tempbuffer is because strtok() messes up
+      //when called twice on the same string
+      struct alias_entry *trav = ahead;
+      int found_alias = 0;
+      while(trav != NULL && found_alias == 0){
+	if(strcmp(tkn, trav->key) == 0){
+	  strcpy(buffer, trav->command);
+	  printf("Executing [%s]\n", buffer);
+	  found_alias = 1;
+	}
+	trav = trav->next;
+      }
+
+
 
       char *token;
       token = strtok(buffer, " ");
-      //the first part of the user input is the command, and technically the first argument
+
       if(token != NULL){
 	command = malloc(sizeof(char) * (int) strlen(token) + 1);
 	args[0] = malloc(sizeof(char) * (int) strlen(token) + 1);
@@ -91,7 +117,6 @@ int sh( int argc, char **argv, char **envp )
       }
       else{
 	command = malloc(0);//if the user doesn't input anything, just malloc() 0 bytes
-	//printf("command = %s\n", command);
       }
       token = strtok(NULL, " ");
       
@@ -127,6 +152,7 @@ int sh( int argc, char **argv, char **envp )
 	}
       }
       free(token);
+      
       //check for each builtin command
       //some commands are separate functions because they're long
       if((int) strlen(command) == 0){
@@ -138,7 +164,7 @@ int sh( int argc, char **argv, char **envp )
       }
       else if(strcmp(command, "cd") == 0){
 	printf("Executing built-in command cd\n");
-	cd(command, args, homedir, currentdir);
+	cd(command, args, homedir, currentdir, previousdir);
       }
       else if(strcmp(command, "pwd") == 0){
 	printf("Executing built-in command pwd\n");
@@ -182,8 +208,8 @@ int sh( int argc, char **argv, char **envp )
 	    }
 	    else{
 	      printf("%s\n", tmp);
+	      free(tmp);
 	    }
-	    free(tmp);
 	  }
 	}
 	else{
@@ -205,7 +231,6 @@ int sh( int argc, char **argv, char **envp )
 	printf("Executing built-in command history\n");
 	struct history *tmp = histhead;
 	int i = 0;
-	//int total = 10;
 	if(args[1] != NULL){
 	  history_length = (int) atoi(args[1]);
 	}
@@ -240,16 +265,62 @@ int sh( int argc, char **argv, char **envp )
 	}
 
       }
+      else if(strcmp(command, "alias") == 0){
+	printf("Executing built-in command alias\n");
+	if(args[1] == NULL){
+	  struct alias_entry *tmp;
+	  tmp = ahead;
+	  while(tmp != NULL){
+	    printf("alias %s = %s\n", tmp->key, tmp->command);
+	    tmp = tmp->next;
+	  }
+	}
+	else if(args[2] == NULL){
+	  printf("Usage for alias: alias [shortcut] [full command]");
+	}
+	else{
+	  struct alias_entry *alias;
+	  alias = malloc(sizeof(struct alias_entry));
+	  alias->key = malloc(sizeof(char) * ABUFFER + 1);
+	  alias->command = malloc(sizeof(char) * buffersize + 1);
+	  alias->next = NULL;
+	  alias->prev = NULL;
+	  strcpy(alias->key, args[1]);
+	  int sum = 0;
+	  for(int i = 2; args[i] != NULL; i++){
+	    sum = sum + strlen(args[i]) + 1;
+	  }
+	  char tmp[sum];
+	  strcpy(tmp, args[2]);
+	  for(int i = 3; args[i] != NULL; i++){
+	    strcat(tmp, " ");
+	    strcat(tmp, args[i]);
+	  }
+	  strcpy(alias->command, tmp);
+	  if(ahead == NULL){
+	    alias->next = NULL;
+	    alias->prev = NULL;
+	    ahead = alias;
+	    atail = alias;
+	  }
+	  else{
+	    atail->next = alias;
+	    alias->prev = atail;
+	    atail = alias;
+	  }
+	  
+	}
+      }
       else{//if it's not a builtin command, it's either an external command or not valid
 	execute_command(command, args, envp, pathlist);
 
       }
       //printf("command end of loop: %s\n", command);
 
-      //command = NULL;
+      command = NULL;
       free(command);
       for(int j = 0; j <= i; j++){
-	//	args[j] = NULL;
+       	args[j] = NULL;
 	free(args[j]);
       }
     }
@@ -325,14 +396,19 @@ char *where(char *command, struct pathelement *pathlist )
 
 //changes directory, outputting new directory to currentdir and chdir()
 //returns 0 on success (or incorrect command usage), -1 on fail
-int cd(char *command, char **args, char *homedir, char *currentdir){
+int cd(char *command, char **args, char *homedir, char *currentdir, char *previousdir){
   if(args[2] != NULL){
     printf("Usage for cd: cd [directory]\n");
     return 0;
   }
   if(args[1] != NULL && strcmp(args[1], "-") == 0){
-    strcpy(currentdir, homedir);
-    chdir(homedir);
+    char *tmpdir;
+    tmpdir = malloc((sizeof(char) * strlen(currentdir)) + 1);
+    strcpy(tmpdir, currentdir);
+    strcpy(currentdir, previousdir);
+    strcpy(previousdir, tmpdir);
+    chdir(previousdir);
+    free(tmpdir);
   }
   else if(args[1] != NULL){
     char path_resolved[PATH_MAX];
@@ -342,6 +418,7 @@ int cd(char *command, char **args, char *homedir, char *currentdir){
     }
     else{
       if(chdir(path_resolved) == 0){
+	strcpy(previousdir, currentdir);
 	strcpy(currentdir, path_resolved);
       }
       else{
@@ -351,6 +428,11 @@ int cd(char *command, char **args, char *homedir, char *currentdir){
     }
   }
   else{
+    strcpy(previousdir, currentdir);
+    strcpy(currentdir, homedir);
+    chdir(homedir);
+
+    /*
     char path_resolved[PATH_MAX];
     if(realpath("..", path_resolved) == NULL){
       perror("Directory not found");
@@ -364,7 +446,7 @@ int cd(char *command, char **args, char *homedir, char *currentdir){
 	perror("Could not change into parent directory");
 	return -1;
       }
-    }
+      }*/
   }
   return 0;
 }
@@ -420,10 +502,12 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 
     char path_resolved[PATH_MAX];
     if(realpath(command, path_resolved) == NULL){
+
       perror("Executable not found");
       return -1;
     }
     else{
+
       if(access(path_resolved, X_OK) == 0){
 	childpid = fork();
 

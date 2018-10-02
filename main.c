@@ -11,11 +11,9 @@ int main( int argc, char **argv, char **envp )
   /* put signal set up stuff here */
 
   signal(SIGINT, sig_handler);
-  //  signal(SIGALRM, sig_handler);
-  //signal(SIGTERM, sig_handler);
   sigignore(SIGQUIT);
   sigignore(SIGTSTP);
-  //  sigignore(SIGTERM);
+
 
 
 
@@ -38,6 +36,6 @@ void sig_handler(int signal)
     if(childpid > 0){
       kill(childpid, SIGTERM);
     }
-    //      kill(childpid, SIGTERM);
+
   }
 }
