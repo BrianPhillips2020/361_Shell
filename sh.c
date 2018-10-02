@@ -71,21 +71,14 @@ int sh( int argc, char **argv, char **envp )
 
   while (go)
     {
+
+
       printf("\n%s%s >> ", prompt, currentdir);
      
 
       /* get command line and process */
-      if(fgets(buffer, buffersize, stdin) == NULL){
-	//	buffer[0] = " ";
-	buffer[0] = '\0';
-	printf("\n");
-	//buffer = NULL;
-      }
-      else{
-	buffer[(int) strlen(buffer) - 1] = '\0';
-      }
-
-      //      buffer[(int) strlen(buffer) - 1] = '\0';
+      fgets(buffer, buffersize, stdin);
+      buffer[(int) strlen(buffer) - 1] = '\0';
 
       char *token;
       token = strtok(buffer, " ");
@@ -98,6 +91,7 @@ int sh( int argc, char **argv, char **envp )
       }
       else{
 	command = malloc(0);//if the user doesn't input anything, just malloc() 0 bytes
+	//printf("command = %s\n", command);
       }
       token = strtok(NULL, " ");
       
@@ -248,9 +242,9 @@ int sh( int argc, char **argv, char **envp )
       }
       else{//if it's not a builtin command, it's either an external command or not valid
 	execute_command(command, args, envp, pathlist);
+
       }
-
-
+      //printf("command end of loop: %s\n", command);
 
       command = NULL;
       free(command);
@@ -420,6 +414,7 @@ int list (char *command, char **args, char *currentdir)
 
 //executes external command, either specified by PATH or if command is a directory
 int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist){
+
   if(strstr(command, "/") == command || strstr(command, ".") == command){
     //command is either an absolute path or relative path                                     
 
@@ -459,7 +454,6 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 
   }
   else{
-
     char *tmp = which(command, pathlist);
     if(tmp != NULL){
 
@@ -490,6 +484,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
     }
     free(tmp);
   }
+  free(command);
   return 0;
 }
 
