@@ -10,13 +10,11 @@ int main( int argc, char **argv, char **envp )
 {
   /* put signal set up stuff here */
 
+  //we want to capture SIGINT, aka ^C, and do our own interpretation to kill child process
   signal(SIGINT, sig_handler);
+  //ignore ^Z and ^X
   sigignore(SIGQUIT);
   sigignore(SIGTSTP);
-
-
-
-
 
   sh(argc, argv, envp);
 

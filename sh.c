@@ -22,6 +22,7 @@ Brian Phillips
 #include <wordexp.h>
 #include "sh.h"
 
+//external global var from main.c, used for signal handling
 extern pid_t childpid;
 
 
@@ -61,7 +62,7 @@ int sh( int argc, char **argv, char **envp )
   /* Put PATH into a linked list */
   pathlist = get_path();
 
-
+  //both history and alias_entry are doubly linked lists
   struct history *histhead = NULL;
   struct history *histtail = NULL;
   int history_length = 10;
@@ -78,8 +79,8 @@ int sh( int argc, char **argv, char **envp )
   while (go)
     {
 
-      int input_error = 0;
-      int expanded = 0;
+      int input_error = 0;//if the user didn't input anything or inputted something incorrect
+      int expanded = 0;//if we expanded a * or ?
       printf("\n%s%s >> ", prompt, currentdir);
      
 
@@ -95,6 +96,7 @@ int sh( int argc, char **argv, char **envp )
 	buffer[(int) strlen(buffer) - 1] = '\0';
       }
 
+      //add commandline to history (so long as it's not an emptry string)
       if((int) strlen(buffer) != 0){
         if(current_length == 0){
           histhead = malloc(sizeof(struct history));
@@ -143,7 +145,7 @@ int sh( int argc, char **argv, char **envp )
 
       char *token;
       token = strtok(buffer, " ");
-
+      //set command (and arg[0] also stores command)
       if(token != NULL){
 	command = malloc(sizeof(char) * (int) strlen(token) + 1);
 	args[0] = malloc(sizeof(char) * (int) strlen(token) + 1);
@@ -310,7 +312,7 @@ int sh( int argc, char **argv, char **envp )
       }
       else if(strcmp(command, "alias") == 0){
 	printf("Executing built-in command alias\n");
-	if(args[1] == NULL){
+	if(args[1] == NULL){//no args passed, then print all aliases
 	  struct alias_entry *tmp;
 	  tmp = ahead;
 	  while(tmp != NULL){
@@ -321,7 +323,7 @@ int sh( int argc, char **argv, char **envp )
 	else if(args[2] == NULL){
 	  printf("Usage for alias: alias [shortcut] [full command]");
 	}
-	else{
+	else{//otherwise add commandline as a new alias
 	  struct alias_entry *alias;
 	  alias = malloc(sizeof(struct alias_entry));
 	  alias->key = malloc(sizeof(char) * ABUFFER + 1);
@@ -329,18 +331,19 @@ int sh( int argc, char **argv, char **envp )
 	  alias->next = NULL;
 	  alias->prev = NULL;
 	  strcpy(alias->key, args[1]);
-	  int sum = 0;
-	  for(int i = 2; args[i] != NULL; i++){
+	  int sum = 0;//we're saving all the args as a big command, sum is the size of them all
+	  //including spaces
+	  for(int i = 2; args[i] != NULL; i++){//sum arg sizes
 	    sum = sum + strlen(args[i]) + 1;
 	  }
 	  char tmp[sum];
 	  strcpy(tmp, args[2]);
-	  for(int i = 3; args[i] != NULL; i++){
+	  for(int i = 3; args[i] != NULL; i++){//concatenate into one big string
 	    strcat(tmp, " ");
 	    strcat(tmp, args[i]);
 	  }
 	  strcpy(alias->command, tmp);
-	  if(ahead == NULL){
+	  if(ahead == NULL){//then add the alias to the list
 	    alias->next = NULL;
 	    alias->prev = NULL;
 	    ahead = alias;
@@ -358,8 +361,8 @@ int sh( int argc, char **argv, char **envp )
 	execute_command(command, args, envp, pathlist);
 
       }
-      //printf("command end of loop: %s\n", command);
 
+      //freeing command and args for realloc
       command = NULL;
       free(command);
       for(int j = 0; j <= i; j++){
@@ -368,10 +371,10 @@ int sh( int argc, char **argv, char **envp )
       }
     }
 
+  //free() everything on shell exit
   free(prompt);
   free(commandline);
   free(args);
-  //free(homedir);
   free(currentdir);
   if(previousdir != NULL) free(previousdir);
   free(owd);
@@ -445,24 +448,23 @@ int cd(char *command, char **args, char *homedir, char *currentdir, char *previo
     printf("Usage for cd: cd [directory]\n");
     return 0;
   }
-  if(args[1] != NULL && strcmp(args[1], "-") == 0){
+  if(args[1] != NULL && strcmp(args[1], "-") == 0){//a '-' means to go to previous dir
     chdir(previousdir);
     char *tmpdir;
     tmpdir = malloc((sizeof(char) * strlen(currentdir)) + 1);
     strcpy(tmpdir, currentdir);
     strcpy(currentdir, previousdir);
     strcpy(previousdir, tmpdir);
-    //    chdir(previousdir);
     free(tmpdir);
   }
   else if(args[1] != NULL){
     char path_resolved[PATH_MAX];
-    if(realpath(args[1], path_resolved) == NULL){
+    if(realpath(args[1], path_resolved) == NULL){//converts a relative path to an absolute path
       perror("Directory not found");
       return -1;
     }
     else{
-      if(chdir(path_resolved) == 0){
+      if(chdir(path_resolved) == 0){//path resolved is the absolute path
 	strcpy(previousdir, currentdir);
 	strcpy(currentdir, path_resolved);
       }
@@ -472,26 +474,10 @@ int cd(char *command, char **args, char *homedir, char *currentdir, char *previo
       }
     }
   }
-  else{
+  else{//otherwise go back to homedir
     strcpy(previousdir, currentdir);
     strcpy(currentdir, homedir);
     chdir(homedir);
-
-    /*
-    char path_resolved[PATH_MAX];
-    if(realpath("..", path_resolved) == NULL){
-      perror("Directory not found");
-      return -1;
-    }
-    else{
-      if(chdir(path_resolved) == 0){
-	strcpy(currentdir, path_resolved);
-      }
-      else{
-	perror("Could not change into parent directory");
-	return -1;
-      }
-      }*/
   }
   return 0;
 }
@@ -500,7 +486,7 @@ int cd(char *command, char **args, char *homedir, char *currentdir, char *previo
 //returns 0 on success, -1 on fail
 int list (char *command, char **args, char *currentdir)
 {
-  if(args[1] == NULL){
+  if(args[1] == NULL){//no args passed, open directory currently in
     DIR *p_dir = opendir(".");
     if(p_dir == NULL){
       perror("Error opening directory");
@@ -517,7 +503,7 @@ int list (char *command, char **args, char *currentdir)
     }
     closedir(p_dir);
   }
-  else{
+  else{//otherwise open every arg
     for(int i = 1; args[i] != NULL; i++){
       DIR *p_dir = opendir(args[i]);
       if(p_dir == NULL){
@@ -546,14 +532,14 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
     //command is either an absolute path or relative path                                     
 
     char path_resolved[PATH_MAX];
-    if(realpath(command, path_resolved) == NULL){
+    if(realpath(command, path_resolved) == NULL){//converts relative path to absolute path
 
       perror("Executable not found");
       return -1;
     }
     else{
 
-      if(access(path_resolved, X_OK) == 0){
+      if(access(path_resolved, X_OK) == 0){//if we can exec the absolute path, fork() then exec()
 	childpid = fork();
 
 	if(childpid < 0){
@@ -562,7 +548,6 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	}
 	else if(childpid == 0){
 	  pid_t mypid = getpid();
-	  //printf("child pid: %d\n", mypid);
 	  printf("Executing [%s]\n", path_resolved);
 	  if(execve(path_resolved, args, envp) == -1){
 	    perror("Could not execute program");
@@ -582,12 +567,12 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
     }
 
   }
-  else{
+  else{//otherwise the command is listed in pathlist
     char *tmp = which(command, pathlist);
     if(tmp != NULL){
 
       childpid = fork();
-
+      //found command, then fork() and exec() like usual
       if(childpid < 0){
 	perror("Error when forking");
 	exit(1);
@@ -608,7 +593,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
       childpid = 0;
 
     }
-    else{
+    else{//if it's not in pathlist then the command doesn't exist
       printf("%s: Command not found", command);
     }
     free(tmp);
@@ -637,15 +622,16 @@ int killsig(char *command, char **args){
     }
     childpid = 0;
   }
-  else{
-    int signal = atoi(args[1]+1);
+  else{//parse the signal from args[1]
+    int signal = atoi(args[1]+1);//+1 removes the '-' in front
 
     if(signal > 31){
-      signal = 0;
+      signal = 0;//signal should be between 0 <= 31
     }
     char **p_args = &args[1]+1;
     int pid = atoi(args[2]);
-
+    
+    //childpid is external global var from main.c, used for signal handling
     childpid = pid;
     if(kill(childpid, signal) == -1){
       perror("Error killing process");
@@ -658,14 +644,14 @@ int killsig(char *command, char **args){
 }
 
 void printenv(char **args, char **envp){
-  if(args[1] == NULL){
+  if(args[1] == NULL){//no args, print out all envp
     int i = 0;
     while(envp[i] != NULL){
       printf("%s\n", envp[i]);
       i++;
     }
   }
-  else if(args[2] == NULL){
+  else if(args[2] == NULL){//only args[1], print out it's args
     char *str = getenv(args[1]);
     if(str != NULL){
       printf("[%s]: %s\n", args[1], str);
