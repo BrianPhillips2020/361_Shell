@@ -73,7 +73,7 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = PROMPTMAX;
   char buffer[buffersize];
   char tempbuffer[buffersize];
-  strcpy(prompt, "(361)");
+  //strcpy(prompt, "(361)");
 
   while (go)
     {
@@ -373,6 +373,7 @@ int sh( int argc, char **argv, char **envp )
   free(args);
   //free(homedir);
   free(currentdir);
+  if(previousdir != NULL) free(previousdir);
   free(owd);
   free(pwd);
 
@@ -445,12 +446,13 @@ int cd(char *command, char **args, char *homedir, char *currentdir, char *previo
     return 0;
   }
   if(args[1] != NULL && strcmp(args[1], "-") == 0){
+    chdir(previousdir);
     char *tmpdir;
     tmpdir = malloc((sizeof(char) * strlen(currentdir)) + 1);
     strcpy(tmpdir, currentdir);
     strcpy(currentdir, previousdir);
     strcpy(previousdir, tmpdir);
-    chdir(previousdir);
+    //    chdir(previousdir);
     free(tmpdir);
   }
   else if(args[1] != NULL){
