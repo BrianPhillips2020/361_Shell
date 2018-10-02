@@ -76,6 +76,8 @@ int sh( int argc, char **argv, char **envp )
 
       /* get command line and process */
       if(fgets(buffer, buffersize, stdin) == NULL){
+	//	buffer[0] = " ";
+	buffer[0] = '\0';
 	printf("\n");
 	//buffer = NULL;
       }
@@ -130,7 +132,7 @@ int sh( int argc, char **argv, char **envp )
 	  current_length++;
 	}
       }
-
+      free(token);
       //check for each builtin command
       //some commands are separate functions because they're long
       if((int) strlen(command) == 0){
@@ -261,6 +263,7 @@ int sh( int argc, char **argv, char **envp )
   free(prompt);
   free(commandline);
   free(args);
+  free(homedir);
   free(currentdir);
   free(owd);
   free(pwd);
