@@ -84,8 +84,8 @@ int sh( int argc, char **argv, char **envp )
       token = strtok(buffer, " ");
       //the first part of the user input is the command, and technically the first argument
       if(token != NULL){
-	command = malloc(sizeof(char) * (int) strlen(token));
-	args[0] = malloc(sizeof(char) * (int) strlen(token));
+	command = malloc(sizeof(char) * (int) strlen(token) + 1);
+	args[0] = malloc(sizeof(char) * (int) strlen(token) + 1);
 	strcpy(command, token);
 	strcpy(args[0], token);
       }
@@ -99,7 +99,7 @@ int sh( int argc, char **argv, char **envp )
       //because programs assume argv[0] is the program name itself, args[0]
       //cannot be an actual argument, just the program name
       for(i = 1; token != NULL; token = strtok(NULL, " ")){
-	args[i] = malloc(sizeof(char) * (int) strlen(token));
+	args[i] = malloc(sizeof(char) * (int) strlen(token) + 1);
 	strcpy(args[i], token);
 	i++;
       }
@@ -107,7 +107,7 @@ int sh( int argc, char **argv, char **envp )
       if((int) strlen(command) != 0){
 	if(current_length == 0){
 	  histhead = malloc(sizeof(struct history));
-	  histhead->commandline = malloc(sizeof(char) * strlen(buffer));
+	  histhead->commandline = malloc(sizeof(char) * strlen(buffer) + 1);
 	  strcpy(histhead->commandline, buffer);
 	  histtail = histhead;
 	  histhead->next = NULL;
@@ -117,7 +117,7 @@ int sh( int argc, char **argv, char **envp )
 	else{
 	  struct history *tmp;
 	  tmp = malloc(sizeof(struct history));
-	  tmp->commandline = malloc(sizeof(char) * strlen(buffer));
+	  tmp->commandline = malloc(sizeof(char) * strlen(buffer) + 1);
 	  strcpy(tmp->commandline, buffer);
 	  tmp->next = histhead;
 	  tmp->prev = NULL;
