@@ -282,7 +282,7 @@ char *which(char *command, struct pathelement *pathlist )
   
   while(p){
     int size = (int) strlen(p->element) + (int) strlen(command) + 1;
-    char *tmp = malloc(size * sizeof(char));
+    char *tmp = malloc(size * sizeof(char) + 1);
     strcpy(tmp, p->element);
     strcat(tmp, "/");
     strcat(tmp, command);
@@ -301,7 +301,7 @@ char *where(char *command, struct pathelement *pathlist )
   struct pathelement *p = pathlist;
   while(p){
     int size = (int) strlen(p->element) + (int) strlen(command) + 1;
-    char *tmp = malloc(size * sizeof(char));
+    char *tmp = malloc(size * sizeof(char) + 1);
     strcpy(tmp, p->element);
     strcat(tmp, "/");
     strcat(tmp, command);
