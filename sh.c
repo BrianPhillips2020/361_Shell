@@ -78,13 +78,47 @@ int sh( int argc, char **argv, char **envp )
   while (go)
     {
 
-
+      int input_error = 0;
+      int expanded = 0;
       printf("\n%s%s >> ", prompt, currentdir);
      
 
       /* get command line and process */
-      fgets(buffer, buffersize, stdin);
-      buffer[(int) strlen(buffer) - 1] = '\0';
+      if(fgets(buffer, buffersize, stdin) == NULL){
+	//when ^D is entered, EOF status gets put on stdin
+	//clearerr() removes that status and lets it continue as normal
+	printf("\nIntercepted ^D\n");
+	clearerr(stdin);
+	continue;
+      }
+      else{
+	buffer[(int) strlen(buffer) - 1] = '\0';
+      }
+
+      if((int) strlen(buffer) != 0){
+        if(current_length == 0){
+          histhead = malloc(sizeof(struct history));
+          histhead->commandline = malloc(sizeof(char) * strlen(buffer) + 1);
+          strcpy(histhead->commandline, buffer);
+          histtail = histhead;
+          histhead->next = NULL;
+          histhead->prev = NULL;
+          current_length++;
+        }
+        else{
+          struct history *tmp;
+          tmp = malloc(sizeof(struct history));
+          tmp->commandline = malloc(sizeof(char) * strlen(buffer) + 1);
+          strcpy(tmp->commandline, buffer);
+          tmp->next = histhead;
+          tmp->prev = NULL;
+          histhead->prev = tmp;
+          histhead = tmp;
+          current_length++;
+        }
+      }
+
+
       strcpy(tempbuffer, buffer);
       char *tkn;
       tkn = strtok(tempbuffer, " ");
@@ -117,6 +151,7 @@ int sh( int argc, char **argv, char **envp )
 	strcpy(args[0], token);
       }
       else{
+	input_error = 1;
 	command = malloc(0);//if the user doesn't input anything, just malloc() 0 bytes
       }
       token = strtok(NULL, " ");
@@ -130,7 +165,8 @@ int sh( int argc, char **argv, char **envp )
 	//(the user might want their shortcut to purposefully have a * or ?)
 	if((strstr(token, "*") != NULL || strstr(token, "?") != NULL) &&
 	   strcmp(command, "alias") != 0){
-
+	  
+	  expanded = 1;
 	  //expand the * or ?
 	  wordexp_t *expanded = malloc(sizeof(wordexp_t));
 	  wordexp(token, expanded, 0);
@@ -138,7 +174,8 @@ int sh( int argc, char **argv, char **envp )
 	  for(int j = 0; expanded->we_wordv[j] != NULL; j++){
 	    if(strstr(expanded->we_wordv[j], "*") != NULL || 
 	       strstr(expanded->we_wordv[j], "?") != NULL){
-	      printf("Failed to expand * or ? in: %s\n", expanded->we_wordv[j]);
+	      printf("No matching files or directories in: %s\n", expanded->we_wordv[j]);
+	      input_error = 1;
 	    }
 	    else{
 	      args[i] = malloc((sizeof(char) * (int) strlen(expanded->we_wordv[j])) + 1);
@@ -154,42 +191,22 @@ int sh( int argc, char **argv, char **envp )
 	  i++;
 	}       
       }
-      
-      if((int) strlen(command) != 0){
-	if(current_length == 0){
-	  histhead = malloc(sizeof(struct history));
-	  histhead->commandline = malloc(sizeof(char) * strlen(buffer) + 1);
-	  strcpy(histhead->commandline, buffer);
-	  histtail = histhead;
-	  histhead->next = NULL;
-	  histhead->prev = NULL;
-	  current_length++;
-	}
-	else{
-	  struct history *tmp;
-	  tmp = malloc(sizeof(struct history));
-	  tmp->commandline = malloc(sizeof(char) * strlen(buffer) + 1);
-	  strcpy(tmp->commandline, buffer);
-	  tmp->next = histhead;
-	  tmp->prev = NULL;
-	  histhead->prev = tmp;
-	  histhead = tmp;
-	  current_length++;
-	}
-      }
+     
       free(token);
       
       //check for each builtin command
       //some commands are separate functions because they're long
-      if((int) strlen(command) == 0){
-	//if the user didn't input anything, don't do anything
+      if(input_error == 1){
+	//if the user didn't input anything or didn't input correctly, don't do anything
       }
       else if(strcmp(command, "exit") == 0){
+	printf("Executing built-in command exit\n");
 	go = 0;
 	printf("Closing shell...\n\n\n");
       }
       else if(strcmp(command, "cd") == 0){
 	printf("Executing built-in command cd\n");
+	if(expanded) args[2] = NULL;//if we expanded a * or ?, use the first result, args[1]
 	cd(command, args, homedir, currentdir, previousdir);
       }
       else if(strcmp(command, "pwd") == 0){
