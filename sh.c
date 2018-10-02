@@ -495,8 +495,13 @@ int killsig(char *command, char **args){
   }
   else if(args[2] == NULL){//only one argument, stored in args[1], a pid
     int pid = atoi(args[1]);
-    //    printf("pid = %d\n", pid);
-    //    printf("hello\n");
+
+    if(pid == getpid()){
+      //if we're trying to kill our own shell process, don't                        
+      printf("Cannot kill own process\nUse: kill -1 [this pid]\nto force kill\n");
+      return -1;
+    }
+
     childpid = pid;
     if(kill(childpid, SIGTERM) == -1){
       perror("Error killing process");
@@ -505,28 +510,20 @@ int killsig(char *command, char **args){
     childpid = 0;
   }
   else{
-    //    printf("wow\n");
     int signal = atoi(args[1]+1);
-    //    printf("%d\n", signal);
+
     if(signal > 31){
       signal = 0;
     }
     char **p_args = &args[1]+1;
     int pid = atoi(args[2]);
+
     childpid = pid;
     if(kill(childpid, signal) == -1){
       perror("Error killing process");
       return -1;
     }
     childpid = 0;
-    /*
-    for(int i = 1; *p_args; i++){
-      int pid = atoi(args[i]);
-      if(kill(pid, signal) == -1){
-	perror("Error killing process");
-      }
-      p_args++;
-      }*/
   }
 
   return 0;

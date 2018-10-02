@@ -20,25 +20,24 @@ int main( int argc, char **argv, char **envp )
 
 
 
-  return sh(argc, argv, envp);
+  sh(argc, argv, envp);
+
+  return 0;
 }
 
 void sig_handler(int signal)
 {
   switch(signal){
   case SIGINT:
-    //printf("\n");
     if(childpid > 0){
       printf("\n");
       kill(childpid, SIGINT);
     }
     break;
   case SIGTERM:
-    printf("\nsigkill\n");
-    //    if(childpid > 0){
-      printf("killing ...\n");
-      kill(childpid, SIGKILL);
-      //}
-    printf("bitch wtf\n");
+    if(childpid > 0){
+      kill(childpid, SIGTERM);
+    }
+    //      kill(childpid, SIGTERM);
   }
 }
