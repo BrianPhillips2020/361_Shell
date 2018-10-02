@@ -248,8 +248,8 @@ int sh( int argc, char **argv, char **envp )
 
       command = NULL;
       free(command);
-      for(int j = 0; j < i; j++){
-	args[j] = NULL;
+      for(int j = 0; j <= i; j++){
+	//	args[j] = NULL;
 	free(args[j]);
       }
     }
