@@ -19,6 +19,7 @@ Brian Phillips
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <wordexp.h>
 #include "sh.h"
 
 extern pid_t childpid;
@@ -98,7 +99,7 @@ int sh( int argc, char **argv, char **envp )
       while(trav != NULL && found_alias == 0){
 	if(strcmp(tkn, trav->key) == 0){
 	  strcpy(buffer, trav->command);
-	  printf("Executing [%s]\n", buffer);
+	  printf("Executing alias [%s]\n", buffer);
 	  found_alias = 1;
 	}
 	trav = trav->next;
@@ -121,12 +122,37 @@ int sh( int argc, char **argv, char **envp )
       token = strtok(NULL, " ");
       
 
-      //because programs assume argv[0] is the program name itself, args[0]
-      //cannot be an actual argument, just the program name
+
+      //args[] assignment
       for(i = 1; token != NULL; token = strtok(NULL, " ")){
-	args[i] = malloc(sizeof(char) * (int) strlen(token) + 1);
-	strcpy(args[i], token);
-	i++;
+	//if an argument the user passed in has * or ?, then expand it
+	//but if the command was 'alias', then don't expand it because we're making a shortcut
+	//(the user might want their shortcut to purposefully have a * or ?)
+	if((strstr(token, "*") != NULL || strstr(token, "?") != NULL) &&
+	   strcmp(command, "alias") != 0){
+
+	  //expand the * or ?
+	  wordexp_t *expanded = malloc(sizeof(wordexp_t));
+	  wordexp(token, expanded, 0);
+	  //for each expanded word, add it to args[] (so long as it was expanded successfully)
+	  for(int j = 0; expanded->we_wordv[j] != NULL; j++){
+	    if(strstr(expanded->we_wordv[j], "*") != NULL || 
+	       strstr(expanded->we_wordv[j], "?") != NULL){
+	      printf("Failed to expand * or ? in: %s\n", expanded->we_wordv[j]);
+	    }
+	    else{
+	      args[i] = malloc((sizeof(char) * (int) strlen(expanded->we_wordv[j])) + 1);
+	      strcpy(args[i], expanded->we_wordv[j]);
+	      i++;
+	    }
+
+	  }
+	}
+	else{//otherwise we didn't have to expand it, so add it to args like normal
+	  args[i] = malloc(sizeof(char) * (int) strlen(token) + 1);
+	  strcpy(args[i], token);
+	  i++;
+	}       
       }
       
       if((int) strlen(command) != 0){
