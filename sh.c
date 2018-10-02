@@ -246,7 +246,7 @@ int sh( int argc, char **argv, char **envp )
       }
       //printf("command end of loop: %s\n", command);
 
-      command = NULL;
+      //command = NULL;
       free(command);
       for(int j = 0; j <= i; j++){
 	//	args[j] = NULL;
@@ -484,7 +484,6 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
     }
     free(tmp);
   }
-  free(command);
   return 0;
 }
 
