@@ -75,8 +75,15 @@ int sh( int argc, char **argv, char **envp )
      
 
       /* get command line and process */
-      fgets(buffer, buffersize, stdin);
-      buffer[(int) strlen(buffer) - 1] = '\0';
+      if(fgets(buffer, buffersize, stdin) == NULL){
+	printf("\n");
+	//buffer = NULL;
+      }
+      else{
+	buffer[(int) strlen(buffer) - 1] = '\0';
+      }
+
+      //      buffer[(int) strlen(buffer) - 1] = '\0';
 
       char *token;
       token = strtok(buffer, " ");
@@ -103,7 +110,6 @@ int sh( int argc, char **argv, char **envp )
       
       if((int) strlen(command) != 0){
 	if(current_length == 0){
-	  printf("inserting a new head\n");
 	  histhead = malloc(sizeof(struct history));
 	  histhead->commandline = malloc(sizeof(char) * strlen(buffer));
 	  strcpy(histhead->commandline, buffer);
@@ -113,7 +119,6 @@ int sh( int argc, char **argv, char **envp )
 	  current_length++;
 	}
 	else{
-	  //printf("nice\n");
 	  struct history *tmp;
 	  tmp = malloc(sizeof(struct history));
 	  tmp->commandline = malloc(sizeof(char) * strlen(buffer));
@@ -136,18 +141,22 @@ int sh( int argc, char **argv, char **envp )
 	printf("Closing shell...\n\n\n");
       }
       else if(strcmp(command, "cd") == 0){
+	printf("Executing built-in command cd\n");
 	cd(command, args, homedir, currentdir);
       }
       else if(strcmp(command, "pwd") == 0){
+	printf("Executing built-in command pwd\n");
 	char *tmp;
 	tmp = getcwd(NULL, 0);
 	printf("[%s]\n", tmp);
 	free(tmp);
       }
       else if(strcmp(command, "list") == 0){
+	printf("Executing built-in command list\n");
 	list(command, args, currentdir);
       }
       else if(strcmp(command, "prompt") == 0){
+	printf("Executing built-in command prompt\n");
 	if(args[1] == NULL){
 	  printf("Enter prompt prefix: ");
 	  char tmp[PROMPTMAX];
@@ -160,13 +169,15 @@ int sh( int argc, char **argv, char **envp )
 	}
       }
       else if(strcmp(command, "pid") == 0){
+	printf("Executing built-in command pid\n");
 	printf("PID: %d\n", getpid());
       }
       else if(strcmp(command, "kill") == 0){
-	printf("wtf\n");
+	printf("Executing built-in command kill\n");
 	killsig(command, args);
       }
       else if(strcmp(command, "which") == 0){
+	printf("Executing built-in command which\n");
 	if(args[1] != NULL){
 	  for(int j = 1; args[j] != NULL; j++){
 	    char *tmp = which(args[j], pathlist);
@@ -184,6 +195,7 @@ int sh( int argc, char **argv, char **envp )
 	}
       }
       else if(strcmp(command, "where") == 0){
+	printf("Executing built-in command where\n");
 	if(args[1] != NULL){
 	  for(int j = 1; args[j] != NULL; j++){
 	    where(args[j], pathlist);
@@ -194,17 +206,43 @@ int sh( int argc, char **argv, char **envp )
 	}
       }
       else if(strcmp(command, "history") == 0){
+	printf("Executing built-in command history\n");
 	struct history *tmp = histhead;
 	int i = 0;
-	int total = 10;
+	//int total = 10;
 	if(args[1] != NULL){
-	  total = (int) atoi(args[1]);
+	  history_length = (int) atoi(args[1]);
 	}
-	while(tmp != NULL && i < total){
+	while(tmp != NULL && i < history_length){
 	  printf("%s\n", tmp->commandline);
 	  tmp = tmp->next;
 	  i++;
 	}
+      }
+      else if(strcmp(command, "printenv") == 0){
+	printf("Executing built-in command printenv\n");
+	printenv(args, envp);
+      }
+      else if(strcmp(command, "setenv") == 0){
+	printf("Executing built-in command setenv\n");
+	if(args[1] == NULL){
+	  printenv(args, envp);
+	}
+	else if(args[2] == NULL){
+	  setenv(args[1], "", 1);
+	}
+	else if(args[3] == NULL){
+	  setenv(args[1], args[2], 1);
+	  if(strcmp(args[1], "HOME") == 0){
+	    homedir = getenv("HOME");
+	  }
+	  else if(strcmp(args[1], "PATH") == 0){
+	    pathlist = get_path();
+	  }
+	}else{
+	  perror("Incorrect number of arguments");
+	}
+
       }
       else{//if it's not a builtin command, it's either an external command or not valid
 	execute_command(command, args, envp, pathlist);
@@ -226,6 +264,16 @@ int sh( int argc, char **argv, char **envp )
   free(currentdir);
   free(owd);
   free(pwd);
+
+  struct history *tmp = histhead;
+  while(tmp->next != NULL){
+    free(tmp->commandline);
+    tmp = tmp->next;
+    free(tmp->prev);
+  }
+  free(tmp->commandline);
+  free(tmp);
+
   return 0;
 }
 
@@ -387,7 +435,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	}
 	else if(childpid == 0){
 	  pid_t mypid = getpid();
-	  printf("child pid: %d\n", mypid);
+	  //printf("child pid: %d\n", mypid);
 	  printf("Executing [%s]\n", path_resolved);
 	  if(execve(path_resolved, args, envp) == -1){
 	    perror("Could not execute program");
@@ -449,28 +497,58 @@ int killsig(char *command, char **args){
   }
   else if(args[2] == NULL){//only one argument, stored in args[1], a pid
     int pid = atoi(args[1]);
-    printf("hello\n");
-    if(kill(pid, SIGTERM) == -1){
+    //    printf("pid = %d\n", pid);
+    //    printf("hello\n");
+    childpid = pid;
+    if(kill(childpid, SIGTERM) == -1){
       perror("Error killing process");
       return -1;
     }
+    childpid = 0;
   }
   else{
-    printf("wow\n");
+    //    printf("wow\n");
     int signal = atoi(args[1]+1);
-    printf("%d\n", signal);
+    //    printf("%d\n", signal);
     if(signal > 31){
       signal = 0;
     }
     char **p_args = &args[1]+1;
+    int pid = atoi(args[2]);
+    childpid = pid;
+    if(kill(childpid, signal) == -1){
+      perror("Error killing process");
+      return -1;
+    }
+    childpid = 0;
+    /*
     for(int i = 1; *p_args; i++){
       int pid = atoi(args[i]);
       if(kill(pid, signal) == -1){
 	perror("Error killing process");
       }
       p_args++;
-    }
+      }*/
   }
 
   return 0;
+}
+
+void printenv(char **args, char **envp){
+  if(args[1] == NULL){
+    int i = 0;
+    while(envp[i] != NULL){
+      printf("%s\n", envp[i]);
+      i++;
+    }
+  }
+  else if(args[2] == NULL){
+    char *str = getenv(args[1]);
+    if(str != NULL){
+      printf("%s\n", str);
+    }
+  }
+  else{
+    perror("Usage for printenv: printenv [arg1] [arg2]\n");
+  }
 }
