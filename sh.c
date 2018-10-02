@@ -246,13 +246,13 @@ int sh( int argc, char **argv, char **envp )
       }
       else if(strcmp(command, "setenv") == 0){
 	printf("Executing built-in command setenv\n");
-	if(args[1] == NULL){
+	if(args[1] == NULL){//no args, print environment
 	  printenv(args, envp);
 	}
-	else if(args[2] == NULL){
+	else if(args[2] == NULL){//one arg, it's a new empty environment variable
 	  setenv(args[1], "", 1);
 	}
-	else if(args[3] == NULL){
+	else if(args[3] == NULL){//two args, second arg is value of environment variable
 	  setenv(args[1], args[2], 1);
 	  if(strcmp(args[1], "HOME") == 0){
 	    homedir = getenv("HOME");
@@ -261,7 +261,7 @@ int sh( int argc, char **argv, char **envp )
 	    pathlist = get_path();
 	  }
 	}else{
-	  perror("Incorrect number of arguments");
+	  printf("Usage for setenv: setenv [VARIABLE] [value]\n");
 	}
 
       }
@@ -623,10 +623,10 @@ void printenv(char **args, char **envp){
   else if(args[2] == NULL){
     char *str = getenv(args[1]);
     if(str != NULL){
-      printf("%s\n", str);
+      printf("[%s]: %s\n", args[1], str);
     }
   }
   else{
-    perror("Usage for printenv: printenv [arg1] [arg2]\n");
+    printf("Usage for printenv: printenv [arg1] [arg2]\n");
   }
 }
