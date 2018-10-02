@@ -263,7 +263,7 @@ int sh( int argc, char **argv, char **envp )
   free(prompt);
   free(commandline);
   free(args);
-  free(homedir);
+  //free(homedir);
   free(currentdir);
   free(owd);
   free(pwd);
