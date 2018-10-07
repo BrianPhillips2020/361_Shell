@@ -16,7 +16,7 @@ int main( int argc, char **argv, char **envp )
   sigignore(SIGQUIT);
   sigignore(SIGTSTP);
 
-  sh(argc, argv, envp);
+  //sh(argc, argv, envp);
 
   return 0;
 }
