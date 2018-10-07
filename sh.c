@@ -33,7 +33,7 @@ int sh( int argc, char **argv, char **envp )
   char *commandline = calloc(MAX_CANON, sizeof(char));
   char *command, *arg, *currentdir, *previousdir, *pwd, *owd;
   char **args = calloc(MAXARGS, sizeof(char*));
-  int uid, i, go = 1;
+  int uid, i, go = 0;
   struct passwd *password_entry;
   char *homedir;
   struct pathelement *pathlist;
@@ -74,7 +74,6 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = PROMPTMAX;
   char buffer[buffersize];
   char tempbuffer[buffersize];
-  //strcpy(prompt, "(361)");
 
   while (go)
     {
@@ -380,14 +379,15 @@ int sh( int argc, char **argv, char **envp )
   free(owd);
   free(pwd);
 
+
+
   struct history *tmp = histhead;
-  while(tmp->next != NULL){
+  while(tmp != NULL){
     free(tmp->commandline);
+    struct history *t = tmp;
     tmp = tmp->next;
-    free(tmp->prev);
+    free(t);
   }
-  free(tmp->commandline);
-  free(tmp);
 
   return 0;
 }
