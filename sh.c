@@ -310,6 +310,20 @@ int sh( int argc, char **argv, char **envp )
 	}
 
       }
+
+
+      
+      //watchuser command
+      else if(strcmp(command, "watchuser") == 0){
+	//first argument is user name, second argument, "off", stops watching a user
+
+	
+      }
+
+
+
+
+      
       else if(strcmp(command, "alias") == 0){
 	printf("Executing built-in command alias\n");
 	if(args[1] == NULL){//no args passed, then print all aliases
