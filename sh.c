@@ -20,6 +20,7 @@ Brian Phillips
 #include <sys/wait.h>
 #include <signal.h>
 #include <wordexp.h>
+#include <pthread.h>
 #include "sh.h"
 
 //external global var from main.c, used for signal handling
@@ -316,8 +317,9 @@ int sh( int argc, char **argv, char **envp )
       //watchuser command
       else if(strcmp(command, "watchuser") == 0){
 	//first argument is user name, second argument, "off", stops watching a user
+	pthread_t p1;
+	pthread_create(&p1, NULL, watchuser, args[1]);
 
-	
       }
 
 
@@ -425,6 +427,11 @@ char *which(char *command, struct pathelement *pathlist )
     p = p->next;
   }
   return NULL;
+}
+
+//Implement watchuser
+void *watchuser(void *arg){
+  printf("blarp\n");
 }
 
 char *where(char *command, struct pathelement *pathlist )

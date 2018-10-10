@@ -10,7 +10,7 @@ int list(char *command, char **args, char *currentdir);
 int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist);
 int killsig(char *command, char **args);
 void printenv(char **args, char **envp);
-
+void *watchuser(void *arg);
 
 struct history{
 
