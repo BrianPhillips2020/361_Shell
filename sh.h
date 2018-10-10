@@ -1,4 +1,5 @@
 #include "get_path.h"
+#include <pthread.h>
 
 int pid;
 int sh(int argc, char **argv, char **envp);
