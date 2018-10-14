@@ -43,6 +43,7 @@ int sh( int argc, char **argv, char **envp )
   password_entry = getpwuid(uid);               /* get passwd info */
   homedir = password_entry->pw_dir;/* Home directory to start
 				      out with*/
+
   
   
   currentdir = malloc(sizeof(char) * PATH_MAX);
@@ -75,7 +76,6 @@ int sh( int argc, char **argv, char **envp )
   int buffersize = PROMPTMAX;
   char buffer[buffersize];
   char tempbuffer[buffersize];
-  //strcpy(prompt, "(361)");
 
   while (go)
     {
@@ -395,15 +395,17 @@ int sh( int argc, char **argv, char **envp )
   if(previousdir != NULL) free(previousdir);
   free(owd);
   free(pwd);
+  free(arg);
+  free(command);
+
 
   struct history *tmp = histhead;
-  while(tmp->next != NULL){
+  while(tmp != NULL){
     free(tmp->commandline);
+    struct history *t = tmp;
     tmp = tmp->next;
-    free(tmp->prev);
+    free(t);
   }
-  free(tmp->commandline);
-  free(tmp);
 
   return 0;
 }
