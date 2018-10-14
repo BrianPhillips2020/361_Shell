@@ -23,6 +23,7 @@ struct history{
 struct strlist{
   char *str;
   struct strlist *next;
+  struct strlist *prev;
 };
 
 #define ABUFFER 20
