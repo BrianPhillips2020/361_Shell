@@ -20,6 +20,11 @@ struct history{
   struct history *prev;
 };
 
+struct strlist{
+  char *str;
+  struct strlist *next;
+};
+
 #define ABUFFER 20
 
 struct alias_entry{

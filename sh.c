@@ -70,6 +70,8 @@ int sh( int argc, char **argv, char **envp )
   int history_length = 10;
   int current_length = 0;
 
+  struct strlist *watchuserhead = NULL;
+
   struct alias_entry *ahead = NULL;
   struct alias_entry *atail = NULL;
 
@@ -329,11 +331,31 @@ int sh( int argc, char **argv, char **envp )
 	  printf("Usage for watchuser: watchuser [user] [off (optional)]\n");
 	}
 	else{
-	  if(strcmp(args[2], "off") == 0){//remove from linked list of users to watch
-	    
+	  if(args[2] != NULL && strcmp(args[2], "off") == 0){//remove from linked list of users to watch
+	    struct strlist *tmp = watchuserhead;
+	    while(tmp != NULL){
+	      printf("User: %s\n", tmp->str);
+	      tmp = tmp->next;
+	    }
 	  }
 	  else{//add to linked list of users to watch
-	    
+	    if(watchuserhead == NULL){
+	      printf("Adding new head\n");
+	      struct strlist *tmp;
+	      tmp = malloc(sizeof(struct strlist));
+	      tmp->str = malloc((sizeof(char) * strlen(args[1])) + 1);
+	      strcpy(tmp->str, args[1]);
+	      watchuserhead = tmp;
+	    }
+	    else{
+	      printf("Adding to list\n");
+	      struct strlist *tmp;
+	      tmp = malloc(sizeof(struct strlist));
+	      tmp->str = malloc((sizeof(char) * strlen(args[1])) + 1);
+	      strcpy(tmp->str, args[1]);
+	      tmp->next = watchuserhead;
+	      watchuserhead = tmp;
+	    }
 	  }
 	}
       }
@@ -450,8 +472,8 @@ char *which(char *command, struct pathelement *pathlist )
 //Implement watchuser
 void *watchuser(void *arg){
   while(1){
-    printf("\nblarp\n");
-    sleep(2);
+    //printf("\nblarp\n");
+    sleep(10);
   }
 }
 
