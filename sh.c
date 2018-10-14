@@ -34,7 +34,7 @@ int sh( int argc, char **argv, char **envp )
   char *commandline = calloc(MAX_CANON, sizeof(char));
   char *command, *arg, *currentdir, *previousdir, *pwd, *owd;
   char **args = calloc(MAXARGS, sizeof(char*));
-  int uid, i, go = 1;
+  int uid, i, go = 1, watchthread = 0;
   struct passwd *password_entry;
   char *homedir;
   struct pathelement *pathlist;
@@ -316,10 +316,26 @@ int sh( int argc, char **argv, char **envp )
       
       //watchuser command
       else if(strcmp(command, "watchuser") == 0){
-	//first argument is user name, second argument, "off", stops watching a user
-	pthread_t p1;
-	pthread_create(&p1, NULL, watchuser, args[1]);
+	printf("Executing built-in command watchuser\n");
 
+	if(watchthread == 0){
+	  printf("Starting watchuser thread...\n");
+	  watchthread = 1;
+	  pthread_t watchuser_t;
+	  pthread_create(&watchuser_t, NULL, watchuser, args[1]);
+	}
+
+	if(args[1] == NULL){
+	  printf("Usage for watchuser: watchuser [user] [off (optional)]\n");
+	}
+	else{
+	  if(strcmp(args[2], "off") == 0){//remove from linked list of users to watch
+	    
+	  }
+	  else{//add to linked list of users to watch
+	    
+	  }
+	}
       }
 
 
@@ -433,7 +449,10 @@ char *which(char *command, struct pathelement *pathlist )
 
 //Implement watchuser
 void *watchuser(void *arg){
-  printf("blarp\n");
+  while(1){
+    printf("\nblarp\n");
+    sleep(2);
+  }
 }
 
 char *where(char *command, struct pathelement *pathlist )
