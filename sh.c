@@ -337,9 +337,14 @@ int sh( int argc, char **argv, char **envp )
 	    while(tmp != NULL){
 	      if(strcmp(tmp->str, args[1]) == 0){
 		if(tmp->prev == NULL){//deleting the head of the list
-		  printf("Deleting %s\n", tmp->str);
-		  watchuserhead = tmp->next;
-		  watchuserhead->prev = NULL;
+		  printf("Deleting head %s\n", tmp->str);
+		  if(tmp->next == NULL){
+		    watchuserhead = NULL;
+		  }
+		  else{
+		    watchuserhead = tmp->next;
+		    watchuserhead->prev = NULL;
+		  }
 		  free(tmp->str);
 		  free(tmp);
 		  tmp = watchuserhead;
@@ -388,6 +393,7 @@ int sh( int argc, char **argv, char **envp )
 	      tmp->str = malloc((sizeof(char) * strlen(args[1])) + 1);
 	      strcpy(tmp->str, args[1]);
 	      tmp->next = watchuserhead;
+	      tmp->prev = NULL;
 	      watchuserhead->prev = tmp;
 	      watchuserhead = tmp;
 	    }
