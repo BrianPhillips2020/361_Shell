@@ -21,12 +21,13 @@ Brian Phillips
 #include <signal.h>
 #include <wordexp.h>
 #include <pthread.h>
+#include <utmpx.h>
 #include "sh.h"
 
 //external global var from main.c, used for signal handling
 extern pid_t childpid;
 
-
+struct strlist *watchuserhead;
 
 int sh( int argc, char **argv, char **envp )
 {
@@ -70,7 +71,7 @@ int sh( int argc, char **argv, char **envp )
   int history_length = 10;
   int current_length = 0;
 
-  struct strlist *watchuserhead = NULL;
+  watchuserhead = NULL;
 
   struct alias_entry *ahead = NULL;
   struct alias_entry *atail = NULL;
@@ -382,6 +383,7 @@ int sh( int argc, char **argv, char **envp )
 	      tmp = malloc(sizeof(struct strlist));
 	      tmp->next = NULL;
 	      tmp->prev = NULL;
+	      tmp->status = 0;
 	      tmp->str = malloc((sizeof(char) * strlen(args[1])) + 1);
 	      strcpy(tmp->str, args[1]);
 	      watchuserhead = tmp;
@@ -394,6 +396,7 @@ int sh( int argc, char **argv, char **envp )
 	      strcpy(tmp->str, args[1]);
 	      tmp->next = watchuserhead;
 	      tmp->prev = NULL;
+	      tmp->status = 0;
 	      watchuserhead->prev = tmp;
 	      watchuserhead = tmp;
 	    }
@@ -512,8 +515,32 @@ char *which(char *command, struct pathelement *pathlist )
 
 //Implement watchuser
 void *watchuser(void *arg){
+  
+  struct utmpx *up;
+
   while(1){
-    //printf("\nblarp\n");
+    setutxent();
+    
+    while((up = getutxent())){
+      if(up->ut_type == USER_PROCESS){
+
+	struct strlist *tmp;
+	tmp = watchuserhead;
+	while(tmp != NULL){
+	  if((tmp->status == 0) && strcmp(tmp->str, up->ut_user) == 0){
+	    tmp->status = 1;
+	    printf("\n%s has logged on [%s] from [%s]", up->ut_user, up->ut_line, up->ut_host);
+	  }
+	  tmp = tmp->next;
+	}
+      }
+    }
+
+
+
+
+
+    printf("\n");
     sleep(10);
   }
 }

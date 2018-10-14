@@ -22,6 +22,7 @@ struct history{
 
 struct strlist{
   char *str;
+  int status;
   struct strlist *next;
   struct strlist *prev;
 };
