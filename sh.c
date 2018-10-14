@@ -33,7 +33,7 @@ int sh( int argc, char **argv, char **envp )
   char *commandline = calloc(MAX_CANON, sizeof(char));
   char *command, *arg, *currentdir, *previousdir, *pwd, *owd;
   char **args = calloc(MAXARGS, sizeof(char*));
-  int uid, i, go = 0;
+  int uid, i, go = 1;
   struct passwd *password_entry;
   char *homedir;
   struct pathelement *pathlist;
@@ -42,6 +42,7 @@ int sh( int argc, char **argv, char **envp )
   password_entry = getpwuid(uid);               /* get passwd info */
   homedir = password_entry->pw_dir;/* Home directory to start
 				      out with*/
+
   
   
   currentdir = malloc(sizeof(char) * PATH_MAX);
@@ -378,7 +379,8 @@ int sh( int argc, char **argv, char **envp )
   if(previousdir != NULL) free(previousdir);
   free(owd);
   free(pwd);
-
+  free(arg);
+  free(command);
 
 
   struct history *tmp = histhead;
