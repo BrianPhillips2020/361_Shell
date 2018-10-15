@@ -540,7 +540,7 @@ void *watchuser(void *arg){
 
 
 
-    printf("\n");
+    //printf("\n");
     sleep(10);
   }
 }
