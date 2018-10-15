@@ -377,6 +377,9 @@ int sh( int argc, char **argv, char **envp )
 
 	  }
 	  else{//add to linked list of users to watch
+
+	    //TO-DO: add mutex locks so that watchuser_t doesn't write tmp->status
+
 	    if(watchuserhead == NULL){
 	      printf("Adding new head: %s\n", args[1]);
 	      struct strlist *tmp;
