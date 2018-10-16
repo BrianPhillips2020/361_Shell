@@ -31,6 +31,7 @@ extern pid_t childpid;
 
 struct strlist *watchuserhead;
 struct strlist *watchmailhead;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int sh( int argc, char **argv, char **envp )
 {
@@ -380,6 +381,7 @@ int sh( int argc, char **argv, char **envp )
 	  printf("Usage for watchuser: watchuser [user] [off (optional)]\n");
 	}
 	else{
+	  pthread_mutex_lock(&mutex);
 	  if(args[2] != NULL && strcmp(args[2], "off") == 0){//remove from linked list of users to watch
 	    struct strlist *tmp = watchuserhead;
 
@@ -425,6 +427,9 @@ int sh( int argc, char **argv, char **envp )
 
 	  }
 	  else{//add to linked list of users to watch
+
+	    //TO-DO: add mutex locks so that watchuser_t doesn't write tmp->status
+
 	    if(watchuserhead == NULL){
 	      printf("Adding new head: %s\n", args[1]);
 	      struct strlist *tmp;
@@ -449,6 +454,7 @@ int sh( int argc, char **argv, char **envp )
 	      watchuserhead = tmp;
 	    }
 	  }
+	  pthread_mutex_unlock(&mutex);
 	}
       }
 
@@ -594,15 +600,17 @@ void *watchuser(void *arg){
     while((up = getutxent())){
       if(up->ut_type == USER_PROCESS){
 
+	pthread_mutex_lock(&mutex);
 	struct strlist *tmp;
 	tmp = watchuserhead;
 	while(tmp != NULL){
 	  if((tmp->status == 0) && strcmp(tmp->str, up->ut_user) == 0){
 	    tmp->status = 1;
-	    printf("\n%s has logged on [%s] from [%s]", up->ut_user, up->ut_line, up->ut_host);
+	    printf("\n%s has logged on [%s] from [%s]\n", up->ut_user, up->ut_line, up->ut_host);
 	  }
 	  tmp = tmp->next;
 	}
+	pthread_mutex_unlock(&mutex);
       }
     }
 
