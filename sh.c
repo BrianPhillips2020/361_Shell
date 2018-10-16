@@ -322,15 +322,17 @@ int sh( int argc, char **argv, char **envp )
       else if(strcmp(command, "watchmail") == 0){
 	printf("Watch mail initiated\n");
 
-	if(argc == 2){
+	if(args[3] == NULL){
 	  //two arguemnts, meaning start watching one file
 	  struct stat buff;
 	  int exists = stat(args[1], &buff);
+	  printf("exists? %d\n", exists);
 	  if(exists == 0){
 	    pthread_t mail_t;
 
 	    char* filepath = (char *)malloc(strlen(args[1]));
 	    strcpy(filepath, args[1]);
+	    printf("%s\n", filepath);
 	    pthread_create(&mail_t, NULL, watchmail, (void *)filepath);
 	    
 	    if(mailthread == 0){
@@ -350,7 +352,15 @@ int sh( int argc, char **argv, char **envp )
 	  }
 	}else if(argc == 3){
 	  //Remove file from watchlist
+
 	}
+	struct strlist *tmp2 = watchmailhead;
+        printf("Watchmail List:\n");
+	while(tmp2 != NULL){
+	  printf("%s\n", tmp2->str);
+	  tmp2 = tmp2->next;
+	}
+	
       }
 
 
