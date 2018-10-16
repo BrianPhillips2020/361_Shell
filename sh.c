@@ -17,6 +17,8 @@ Brian Phillips
 #include <pwd.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <time.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <wordexp.h>
@@ -28,6 +30,7 @@ Brian Phillips
 extern pid_t childpid;
 
 struct strlist *watchuserhead;
+struct strlist *watchmailhead;
 
 int sh( int argc, char **argv, char **envp )
 {
@@ -35,7 +38,7 @@ int sh( int argc, char **argv, char **envp )
   char *commandline = calloc(MAX_CANON, sizeof(char));
   char *command, *arg, *currentdir, *previousdir, *pwd, *owd;
   char **args = calloc(MAXARGS, sizeof(char*));
-  int uid, i, go = 1, watchthread = 0;
+  int uid, i, go = 1, watchthread = 0, mailthread = 0;
   struct passwd *password_entry;
   char *homedir;
   struct pathelement *pathlist;
@@ -72,7 +75,8 @@ int sh( int argc, char **argv, char **envp )
   int current_length = 0;
 
   watchuserhead = NULL;
-
+  watchmailhead = NULL;
+  
   struct alias_entry *ahead = NULL;
   struct alias_entry *atail = NULL;
 
@@ -314,6 +318,40 @@ int sh( int argc, char **argv, char **envp )
 	}
 
       }
+      //watchmail command
+      else if(strcmp(command, "watchmail") == 0){
+	printf("Watch mail initiated\n");
+
+	if(argc == 2){
+	  //two arguemnts, meaning start watching one file
+	  struct stat buff;
+	  int exists = stat(args[1], &buff);
+	  if(exists == 0){
+	    pthread_t mail_t;
+
+	    char* filepath = (char *)malloc(strlen(args[1]));
+	    strcpy(filepath, args[1]);
+	    pthread_create(&mail_t, NULL, watchmail, (void *)filepath);
+	    
+	    if(mailthread == 0){
+	      mailthread = 1;
+	      watchmailhead = malloc(sizeof(struct strlist));
+	      watchmailhead->str = malloc(sizeof(strlen(filepath)));
+	      strcpy(watchmailhead->str, filepath);
+	    }else{
+	      struct strlist *tmp = watchmailhead;
+	      while(tmp->next != NULL){
+		tmp = tmp->next;
+	      }
+	      tmp->next = malloc(sizeof(struct strlist));
+	      tmp->next->str = malloc(sizeof(strlen(filepath)));
+	      strcpy(tmp->next->str, filepath);
+	    }
+	  }
+	}else if(argc == 3){
+	  //Remove file from watchlist
+	}
+      }
 
 
       
@@ -513,6 +551,28 @@ char *which(char *command, struct pathelement *pathlist )
   return NULL;
 }
 
+//watchmail
+ void *watchmail(void *arg){
+   char* file = (char*)arg;
+   struct stat path;
+   
+   stat(file, &path);
+   long old = (long)path.st_size;
+   time_t start;
+   while(1){
+     time(&start);
+     stat(file, &path);
+     if((long)path.st_size != old){
+       printf("\nBEEP! You got mail in %s at time %s\n", file, ctime(&start));
+       fflush(stdout);
+       old = (long)path.st_size;
+     }
+     sleep(1);
+   }
+ }
+
+   
+ 
 //Implement watchuser
 void *watchuser(void *arg){
   

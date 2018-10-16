@@ -12,6 +12,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 int killsig(char *command, char **args);
 void printenv(char **args, char **envp);
 void *watchuser(void *arg);
+void *watchmail(void *arg);
 
 struct history{
 
