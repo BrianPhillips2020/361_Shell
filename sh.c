@@ -32,6 +32,7 @@ extern pid_t childpid;
 struct strlist *watchuserhead;
 struct strlist *watchmailhead;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int argcount = 0;
 
 int sh( int argc, char **argv, char **envp )
 {
@@ -204,6 +205,9 @@ int sh( int argc, char **argv, char **envp )
       }
      
       free(token);
+
+      argcount = i;
+      printf("argcount = %d\n", argcount);
       
       //check for each builtin command
       //some commands are separate functions because they're long
@@ -737,6 +741,10 @@ int list (char *command, char **args, char *currentdir)
 
 //executes external command, either specified by PATH or if command is a directory
 int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist){
+
+  if(strcmp(args[argcount - 1], "&") == 0){
+    printf("found &\n");
+  }
 
   if(strstr(command, "/") == command || strstr(command, ".") == command){
     //command is either an absolute path or relative path                                     
