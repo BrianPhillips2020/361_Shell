@@ -374,7 +374,7 @@ int sh( int argc, char **argv, char **envp )
 	    if(strcmp(tmp2->next->str, args[1]) == 0){
 	      pthread_cancel(tmp2->next->id);
 	      printf("joining thread\n");
-	      int j = pthread_join(tmp2->id, NULL);
+	      int j = pthread_join(tmp2->next->id, NULL);
 	      printf("joined? %d\n", j);
 	      tmp2->next = tmp2->next->next;
 	    }else{
