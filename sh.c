@@ -359,7 +359,8 @@ int sh( int argc, char **argv, char **envp )
 	  }
 	}else if(args[2] != NULL){
 	  //Remove head from watchlist
-	  if(strcmp(watchmailhead->str, args[1]) == 0){
+	  printf("bitch\n");
+	  if( (watchmailhead != NULL) && (strcmp(watchmailhead->str, args[1]) == 0)){
 	    struct maillist *tmp = watchmailhead;
 	    watchmailhead = watchmailhead->next;
 	    pthread_cancel(tmp->id);
@@ -368,11 +369,14 @@ int sh( int argc, char **argv, char **envp )
 	  }else{
 	    //Remove another node from watchlist
 	    struct maillist *tmp2 = watchmailhead;
-	    while(strcmp(tmp2->next->str, args[1]) != 0 || tmp2->next->str != NULL){
+	    printf("about to traverse list\n");
+	    while(strcmp(tmp2->next->str, args[1]) != 0 || (tmp2->next->next != NULL)){
 	      printf("Node = %s: Next = %s\n", tmp2->str, tmp2->next->str);
 	      tmp2 = tmp2->next;
 	    }
-	    if(strcmp(tmp2->next->str, args[1]) == 0){
+	    if(watchmailhead == NULL){
+	      printf("No files are currently being watched\n");
+	    }else if(strcmp(tmp2->next->str, args[1]) == 0){
 	      pthread_cancel(tmp2->next->id);
 	      printf("joining thread\n");
 	      int j = pthread_join(tmp2->next->id, NULL);
