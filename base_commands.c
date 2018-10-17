@@ -26,6 +26,7 @@ char *which(char *command, struct pathelement *pathlist )
    long old = (long)path.st_size;
    time_t start;
    while(1){
+     //printf("watchmail beep\n");
      time(&start);
      stat(file, &path);
      if((long)path.st_size != old){
@@ -33,7 +34,7 @@ char *which(char *command, struct pathelement *pathlist )
        fflush(stdout);
        old = (long)path.st_size;
      }
-     sleep(1);
+     sleep(5);
    }
  }
 

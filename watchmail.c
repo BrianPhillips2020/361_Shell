@@ -7,7 +7,7 @@
 	  if(exists == 0){
 	    pthread_t mail_t;
 
-	    char* filepath = (char *)malloc(strlen(args[1]));
+	    char *filepath = malloc(sizeof(char) * strlen(args[1]));
 	    strcpy(filepath, args[1]);
 	    printf("%s\n", filepath);
 	    pthread_create(&mail_t, NULL, watchmail, (void *)filepath);
@@ -15,18 +15,20 @@
 	    if(mailthread == 0 || watchmailhead == NULL){
 	      mailthread = 1;
 	      watchmailhead = malloc(sizeof(struct maillist));
-	      watchmailhead->str = malloc(sizeof(strlen(filepath)));
+	      watchmailhead->str = malloc(sizeof(char) * strlen(filepath));
 	      strcpy(watchmailhead->str, filepath);
 	      watchmailhead->id = mail_t;
+	      watchmailhead->next = NULL;
 	    }else{
 	      struct maillist *tmp = watchmailhead;
 	      while(tmp->next != NULL){
 		tmp = tmp->next;
 	      }
 	      tmp->next = malloc(sizeof(struct maillist));
-	      tmp->next->str = malloc(sizeof(strlen(filepath)));
+	      tmp->next->str = malloc(sizeof(char) * strlen(filepath));
 	      strcpy(tmp->next->str, filepath);
 	      tmp->next->id = mail_t;
+	      tmp->next->next = NULL;
 	    }
 	  }
 	}else if(args[2] != NULL){
@@ -37,6 +39,7 @@
 	    pthread_cancel(tmp->id);
 	    int pj = pthread_join(tmp->id, NULL);
 	    printf("joined? %d\n", pj);
+	    tmp->next = NULL;
 	  }else{
 	    //Remove another node from watchlist
 	    struct maillist *tmp2 = watchmailhead;
