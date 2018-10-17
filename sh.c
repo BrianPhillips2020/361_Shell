@@ -368,7 +368,8 @@ int sh( int argc, char **argv, char **envp )
 	  }else{
 	    //Remove another node from watchlist
 	    struct maillist *tmp2 = watchmailhead;
-	    while(strcmp(tmp2->next->str, args[1]) != 0){
+	    while(strcmp(tmp2->next->str, args[1]) != 0 || tmp2->next->str != NULL){
+	      printf("Node = %s: Next = %s\n", tmp2->str, tmp2->next->str);
 	      tmp2 = tmp2->next;
 	    }
 	    if(strcmp(tmp2->next->str, args[1]) == 0){
