@@ -43,7 +43,10 @@ struct alias_entry{
   struct alias_entry *prev;
 };
 
-
+struct children{
+  pid_t pid;
+  struct children *next;
+};
 
 #define PROMPTMAX 64
 #define MAXARGS 10

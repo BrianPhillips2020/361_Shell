@@ -31,6 +31,7 @@ extern pid_t childpid;
 
 struct strlist *watchuserhead;
 struct maillist *watchmailhead;
+struct children *childhead = NULL;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int argcount = 0;
 
@@ -44,6 +45,9 @@ int sh( int argc, char **argv, char **envp )
   struct passwd *password_entry;
   char *homedir;
   struct pathelement *pathlist;
+  childhead = malloc(sizeof(struct children));
+  childhead->pid = 0;
+  childhead->next = NULL;
 
   uid = getuid();
   password_entry = getpwuid(uid);               /* get passwd info */
@@ -88,6 +92,8 @@ int sh( int argc, char **argv, char **envp )
 
   while (go)
     {
+      
+      
 
       int input_error = 0;//if the user didn't input anything or inputted something incorrect
       int expanded = 0;//if we expanded a * or ?
@@ -207,7 +213,7 @@ int sh( int argc, char **argv, char **envp )
       free(token);
 
       argcount = i;
-      printf("argcount = %d\n", argcount);
+      //printf("argcount = %d\n", argcount);
       
       //check for each builtin command
       //some commands are separate functions because they're long
@@ -536,6 +542,24 @@ int sh( int argc, char **argv, char **envp )
 
       }
 
+      //call non-blocking wait() for each child process
+      struct children *tmp;
+      tmp = childhead;
+      while(tmp->next != NULL){
+
+	int p = waitpid(tmp->next->pid, NULL, WNOHANG);
+
+	if(p != 0){
+	  printf("found dead child: %d\n", p);
+	  tmp->next = tmp->next->next;
+	}
+	else{
+	  tmp = tmp->next;
+	}
+      }
+
+
+
       //freeing command and args for realloc
       command = NULL;
       free(command);
@@ -759,9 +783,10 @@ int list (char *command, char **args, char *currentdir)
 
 //executes external command, either specified by PATH or if command is a directory
 int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist){
-
+  int background = 0;
   if(strcmp(args[argcount - 1], "&") == 0){
     printf("found &\n");
+    background = 1;
   }
 
   if(strstr(command, "/") == command || strstr(command, ".") == command){
@@ -792,9 +817,25 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	  }
 	}
 	else{
-	  waitpid(childpid, NULL, 0);
+	  if(background == 1){
+	    struct children *tmp;
+	    tmp = malloc(sizeof(struct children));
+	    tmp->pid = childpid;
+	    tmp->next = NULL;
+	    if(childhead == NULL){
+	      childhead = tmp;
+	    }
+	    else{
+	      tmp->next = childhead;
+	      childhead = tmp;
+	    }
+	    
+	  }
+	  else{
+	    waitpid(childpid, NULL, 0);
+	    childpid = 0;
+	  }
 	}
-	childpid = 0;
       }
       else{
 	perror("Could not access executable");
@@ -824,9 +865,25 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	}
       }
       else{
-	waitpid(childpid, NULL, 0);
+	if(background == 1){
+	  struct children *tmp;
+	  tmp = malloc(sizeof(struct children));
+	  tmp->pid = childpid;
+	  tmp->next = NULL;
+	  if(childhead == NULL){
+	    childhead = tmp;
+	  }
+	  else{
+	    tmp->next = childhead;
+	    childhead = tmp;
+	  }
+	  childpid = 0;
+	}
+	else{
+	  waitpid(childpid, NULL, 0);
+	  childpid = 0;
+	}
       }
-      childpid = 0;
 
     }
     else{//if it's not in pathlist then the command doesn't exist
