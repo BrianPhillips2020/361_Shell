@@ -31,19 +31,32 @@ extern pid_t childpid;
 
 struct strlist *watchuserhead;
 struct strlist *watchmailhead;
+struct history *histhead = NULL;
+struct history *histtail = NULL;
+int history_length = 10;
+int current_length = 0;
+struct alias_entry *ahead = NULL;
+struct alias_entry *atail = NULL;
+
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int argcount = 0;
 
+char prompt, *commandline, *command, *arg, *homedir, *currentdir, *previousdir, *pwd, *owd;
+char **args;
+int uid, i, go = 1, watchthread = 0, mailthread = 0;
+struct pathelement *pathlist;
+
+
 int sh( int argc, char **argv, char **envp )
 {
-  char *prompt = calloc(PROMPTMAX, sizeof(char));
-  char *commandline = calloc(MAX_CANON, sizeof(char));
-  char *command, *arg, *currentdir, *previousdir, *pwd, *owd;
-  char **args = calloc(MAXARGS, sizeof(char*));
-  int uid, i, go = 1, watchthread = 0, mailthread = 0;
+
+  prompt = calloc(PROMPTMAX, sizeof(char));
+  commandline = calloc(MAX_CANON, sizeof(char));
+  args = calloc(MAXARGS, sizeof(char*));
+
+
   struct passwd *password_entry;
-  char *homedir;
-  struct pathelement *pathlist;
 
   uid = getuid();
   password_entry = getpwuid(uid);               /* get passwd info */
@@ -70,17 +83,9 @@ int sh( int argc, char **argv, char **envp )
   /* Put PATH into a linked list */
   pathlist = get_path();
 
-  //both history and alias_entry are doubly linked lists
-  struct history *histhead = NULL;
-  struct history *histtail = NULL;
-  int history_length = 10;
-  int current_length = 0;
-
   watchuserhead = NULL;
   watchmailhead = NULL;
   
-  struct alias_entry *ahead = NULL;
-  struct alias_entry *atail = NULL;
 
   int buffersize = PROMPTMAX;
   char buffer[buffersize];
