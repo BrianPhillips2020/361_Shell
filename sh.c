@@ -30,7 +30,7 @@ Brian Phillips
 extern pid_t childpid;
 
 struct strlist *watchuserhead;
-struct strlist *watchmailhead;
+struct maillist *watchmailhead;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int argcount = 0;
 
@@ -342,24 +342,24 @@ int sh( int argc, char **argv, char **envp )
 	    
 	    if(mailthread == 0){
 	      mailthread = 1;
-	      watchmailhead = malloc(sizeof(struct strlist));
+	      watchmailhead = malloc(sizeof(struct maillist));
 	      watchmailhead->str = malloc(sizeof(strlen(filepath)));
 	      strcpy(watchmailhead->str, filepath);
+	      watchmailhead->id = mail_t;
 	    }else{
-	      struct strlist *tmp = watchmailhead;
+	      struct maillist *tmp = watchmailhead;
 	      while(tmp->next != NULL){
 		tmp = tmp->next;
 	      }
-	      tmp->next = malloc(sizeof(struct strlist));
+	      tmp->next = malloc(sizeof(struct maillist));
 	      tmp->next->str = malloc(sizeof(strlen(filepath)));
 	      strcpy(tmp->next->str, filepath);
-	    }
-	  }
-	}else if(argc == 3){
+	      tmp->next->id = mail_t;
+	    } }
+	}else if(strcmp(args[3], "off") == 0){
 	  //Remove file from watchlist
-
 	}
-	struct strlist *tmp2 = watchmailhead;
+	struct maillist *tmp2 = watchmailhead;
         printf("Watchmail List:\n");
 	while(tmp2 != NULL){
 	  printf("%s\n", tmp2->str);

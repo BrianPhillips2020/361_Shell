@@ -21,6 +21,12 @@ struct history{
   struct history *prev;
 };
 
+struct maillist{
+  char *str;
+  pthread_t id;
+  struct maillist *next;
+};
+  
 struct strlist{
   char *str;
   int status;
