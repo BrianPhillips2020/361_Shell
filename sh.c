@@ -8,6 +8,7 @@ Brian Phillips
 
  */
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -42,6 +43,7 @@ int sh( int argc, char **argv, char **envp )
   char *command, *arg, *currentdir, *previousdir, *pwd, *owd;
   char **args = calloc(MAXARGS, sizeof(char*));
   int uid, i, go = 1, noclobber = 0, watchthread = 0, mailthread = 0;
+  int sout = 0, serr = 0, sin = 0;
   struct passwd *password_entry;
   char *homedir;
   struct pathelement *pathlist;
@@ -213,6 +215,116 @@ int sh( int argc, char **argv, char **envp )
 
       argcount = i;
       //printf("argcount = %d\n", argcount);
+
+      int redirect = 0;
+      char *redir_type;
+      char *redir_dest;
+
+      int save_stdin = dup(STDIN_FILENO);
+      int save_stdout = dup(STDOUT_FILENO);
+      int save_stderr = dup(STDERR_FILENO);
+      int fileid;
+
+
+      for(int j = 1; j < argcount; j++){
+	if(strcmp(args[j], ">") == 0 || strcmp(args[j], ">&") == 0 || strcmp(args[j], ">>") == 0 || strcmp(args[j], ">>&") == 0 || strcmp(args[j], "<") == 0){
+	  redirect = j;
+	  redir_type = args[j];
+	  redir_dest = args[j + 1];
+	  printf("found %s\n", redir_type);
+	}
+      }
+
+      if(redirect != 0){
+	printf("Setting up redirections..\n");
+	struct stat sttmp;
+
+	
+
+	if(strcmp(redir_type, ">") == 0){
+	  if(noclobber == 1 && stat(redir_dest, &sttmp) == 0){
+	    printf("Noclobber is preventing '>' for %s\n", redir_dest);
+	    input_error = 1;
+	  }
+	  else{
+	    fileid = open(redir_dest, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+	    close(STDOUT_FILENO);
+	    dup(fileid);
+	    close(fileid);
+	    sout = 1;
+	  }
+	}
+	else if(strcmp(redir_type, ">&") == 0){
+	  if(noclobber == 1 && stat(redir_dest, &sttmp) == 0){
+	    printf("Noclobber is preventing '>&' for %s\n", redir_dest);
+	    input_error = 1;
+	  }
+	  else{
+	    fileid = open(redir_dest, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+	    close(STDOUT_FILENO);
+	    dup(fileid);
+	    close(STDERR_FILENO);
+	    dup(fileid);
+	    close(fileid);
+	    sout = 1;
+	    serr = 1;
+	  }
+	}
+	else if(strcmp(redir_type, ">>") == 0){
+	  printf("Redirecting off of '>>'\n");
+	  if(noclobber == 1 && stat(redir_dest, &sttmp) != 0){
+	    printf("Noclobber is preventing '>>' for non-existent file %s\n", redir_dest);
+	    input_error = 1;
+	  }
+	  else{
+	    fileid = open(redir_dest, O_CREAT|O_WRONLY, 0666);
+	    close(STDOUT_FILENO);
+	    dup(fileid);
+	    close(fileid);
+	    sout = 1;
+	  }
+	}
+	else if(strcmp(redir_type, ">>&") == 0){
+	  if(noclobber == 1 && stat(redir_dest, &sttmp) != 0){
+	    printf("Noclobber is preventing '>>&' for non-existent file %s\n", redir_dest);
+	    input_error = 1;
+	  }
+	  else{
+	    fileid = open(redir_dest, O_CREAT|O_WRONLY, 0666);
+	    close(STDOUT_FILENO);
+	    dup(fileid);
+	    close(STDERR_FILENO);
+	    dup(fileid);
+	    close(fileid);
+	    sout = 1;
+	    serr = 1;
+	  }
+	}
+	else{
+	  if(stat(redir_dest, &sttmp) < 0){
+	    perror("Error accessing specified file");
+	    input_error = 1;
+	  }
+	  else{
+	    fileid = open(redir_dest, O_RDONLY);
+	    close(STDIN_FILENO);
+	    dup(fileid);
+	    close(fileid);
+	    sin = 1;
+	  }
+	}
+	args[redirect] = NULL;
+	args[redirect + 1] = NULL;
+
+      }
+
+
+
+
+
+
+
+
       
       //check for each builtin command
       //some commands are separate functions because they're long
@@ -271,19 +383,11 @@ int sh( int argc, char **argv, char **envp )
       else if(strcmp(command, "setenv") == 0){
 	printf("Executing built-in command setenv\n");
 	#include "setenv.c"
-
       }
-      //watchmail command
       else if(strcmp(command, "watchmail") == 0){
 	printf("Watch mail initiated\n");
 	#include "watchmail.c"
       }
-	  
-	  
-      
-
-      
-      //watchuser command
       else if(strcmp(command, "watchuser") == 0){
 	printf("Executing built-in command watchuser\n");
 	#include "watchuser.c"
@@ -292,22 +396,41 @@ int sh( int argc, char **argv, char **envp )
 	printf("Executing built-in command noclobber\n");
 	if(noclobber == 0){
 	  noclobber = 1;
+	  printf("Noclobber is now on\n");
 	}
 	else{
 	  noclobber = 0;
+	  printf("Noclobber is now off\n");
 	}
-      }
-
-
-
-      
+      }      
       else if(strcmp(command, "alias") == 0){
 	printf("Executing built-in command alias\n");
 	#include "alias.c"
       }
       else{//if it's not a builtin command, it's either an external command or not valid
+	printf("Ready to execute external command...\n");
 	execute_command(command, args, envp, pathlist);
 
+      }
+
+      //replace stdout and stdin if they were modified
+      if(sin == 1){
+	//printf("fixing in\n");
+	sin = 0;
+	close(fileid);
+	dup2(save_stdin, 0);
+      }
+      if(sout == 1){
+	//printf("fixing out\n");
+	sout = 0;
+	close(fileid);
+	dup2(save_stdout, 1);
+      }
+      if(serr == 1){
+	//printf("fixing err\n");
+	serr = 0;
+	close(fileid);
+	dup2(save_stderr, 2);
       }
 
       //call non-blocking wait() for each child process

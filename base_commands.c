@@ -189,7 +189,7 @@ int list (char *command, char **args, char *currentdir)
 //executes external command, either specified by PATH or if command is a directory
 int execute_command(char *command, char **args, char **envp, struct pathelement  *pathlist){
   int background = 0;
-  if(strcmp(args[argcount - 1], "&") == 0){
+  if(args[argcount - 1] != NULL && strcmp(args[argcount - 1], "&") == 0){
     printf("found &\n");
     background = 1;
   }
