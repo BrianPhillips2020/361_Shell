@@ -327,7 +327,7 @@ int sh( int argc, char **argv, char **envp )
       else if(strcmp(command, "watchmail") == 0){
 	printf("Watch mail initiated\n");
 
-	if(args[3] == NULL){
+	if(args[2] == NULL){
 	  //two arguemnts, meaning start watching one file
 	  struct stat buff;
 	  int exists = stat(args[1], &buff);
@@ -340,7 +340,7 @@ int sh( int argc, char **argv, char **envp )
 	    printf("%s\n", filepath);
 	    pthread_create(&mail_t, NULL, watchmail, (void *)filepath);
 	    
-	    if(mailthread == 0){
+	    if(mailthread == 0 || watchmailhead == NULL){
 	      mailthread = 1;
 	      watchmailhead = malloc(sizeof(struct maillist));
 	      watchmailhead->str = malloc(sizeof(strlen(filepath)));
@@ -355,19 +355,37 @@ int sh( int argc, char **argv, char **envp )
 	      tmp->next->str = malloc(sizeof(strlen(filepath)));
 	      strcpy(tmp->next->str, filepath);
 	      tmp->next->id = mail_t;
-	    } }
-	}else if(strcmp(args[3], "off") == 0){
-	  //Remove file from watchlist
+	    }
+	  }
+	}else if(args[2] != NULL){
+	  //Remove head from watchlist
+	  if(strcmp(watchmailhead->str, args[1]) == 0){
+	    struct maillist *tmp = watchmailhead;
+	    watchmailhead = watchmailhead->next;
+	    pthread_cancel(tmp->id);
+	    int pj = pthread_join(tmp->id, NULL);
+	    printf("joined? %d\n", pj);
+	  }else{
+	    //Remove another node from watchlist
+	    struct maillist *tmp2 = watchmailhead;
+	    while(strcmp(tmp2->next->str, args[1]) != 0){
+	      tmp2 = tmp2->next;
+	    }
+	    if(strcmp(tmp2->next->str, args[1]) == 0){
+	      pthread_cancel(tmp2->next->id);
+	      printf("joining thread\n");
+	      int j = pthread_join(tmp2->id, NULL);
+	      printf("joined? %d\n", j);
+	      tmp2->next = tmp2->next->next;
+	    }else{
+	      printf("File not being watched\n");
+	    }
+	  }
 	}
-	struct maillist *tmp2 = watchmailhead;
-        printf("Watchmail List:\n");
-	while(tmp2 != NULL){
-	  printf("%s\n", tmp2->str);
-	  tmp2 = tmp2->next;
-	}
-	
       }
-
+	  
+	  
+      
 
       
       //watchuser command
