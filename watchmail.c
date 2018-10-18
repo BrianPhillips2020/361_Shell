@@ -31,9 +31,9 @@
 	      tmp->next->next = NULL;
 	    }
 	  }
-	}else if(args[2] != NULL){
+	}else if(args[2] != NULL && strcmp(args[2], "off") == 0){
 	  //Remove head from watchlist
-	  if(strcmp(watchmailhead->str, args[1]) == 0){
+	  if((watchmailhead != NULL) && (strcmp(watchmailhead->str, args[1]) == 0)){
 	    struct maillist *tmp = watchmailhead;
 	    watchmailhead = watchmailhead->next;
 	    pthread_cancel(tmp->id);
@@ -41,19 +41,26 @@
 	    printf("joined? %d\n", pj);
 	    tmp->next = NULL;
 	  }else{
-	    //Remove another node from watchlist
-	    struct maillist *tmp2 = watchmailhead;
-	    while(strcmp(tmp2->next->str, args[1]) != 0){
-	      tmp2 = tmp2->next;
-	    }
-	    if(strcmp(tmp2->next->str, args[1]) == 0){
-	      pthread_cancel(tmp2->next->id);
-	      printf("joining thread\n");
-	      int j = pthread_join(tmp2->next->id, NULL);
-	      printf("joined? %d\n", j);
-	      tmp2->next = tmp2->next->next;
+	    if(watchmailhead == NULL){
+	      printf("No files being watched\n");
 	    }else{
-	      printf("File not being watched\n");
+	      //Remove another node from watchlist
+	      struct maillist *tmp2 = watchmailhead;
+	      if(tmp2->next != NULL){
+		while(strcmp(tmp2->next->str, args[1]) != 0){ 
+		  tmp2 = tmp2->next;
+		}
+		if((strcmp(tmp2->next->str, args[1]) == 0)){
+		  pthread_cancel(tmp2->next->id);
+		  printf("joining thread\n");
+		  int j = pthread_join(tmp2->next->id, NULL);
+		  printf("joined? %d\n", j);
+		  tmp2->next = tmp2->next->next;
+		}else{
+		  printf("File not being watched\n");
+		}
+	      }
 	    }
 	  }
 	}
+
