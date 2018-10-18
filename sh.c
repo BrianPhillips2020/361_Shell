@@ -236,12 +236,12 @@ int sh( int argc, char **argv, char **envp )
 	  redirect = j;
 	  redir_type = args[j];
 	  redir_dest = args[j + 1];
-	  printf("found %s\n", redir_type);
+	  //printf("found %s\n", redir_type);
 	}
       }
 
       if(redirect != 0){
-	printf("Setting up redirections..\n");
+	//printf("Setting up redirections..\n");
 	struct stat sttmp;
 
 	
@@ -276,13 +276,13 @@ int sh( int argc, char **argv, char **envp )
 	  }
 	}
 	else if(strcmp(redir_type, ">>") == 0){
-	  printf("Redirecting off of '>>'\n");
+	  //printf("Redirecting off of '>>'\n");
 	  if(noclobber == 1 && stat(redir_dest, &sttmp) != 0){
 	    printf("Noclobber is preventing '>>' for non-existent file %s\n", redir_dest);
 	    input_error = 1;
 	  }
 	  else{
-	    fileid = open(redir_dest, O_CREAT|O_WRONLY, 0666);
+	    fileid = open(redir_dest, O_CREAT|O_WRONLY|O_APPEND, 0666);
 	    close(STDOUT_FILENO);
 	    dup(fileid);
 	    close(fileid);
@@ -295,7 +295,7 @@ int sh( int argc, char **argv, char **envp )
 	    input_error = 1;
 	  }
 	  else{
-	    fileid = open(redir_dest, O_CREAT|O_WRONLY, 0666);
+	    fileid = open(redir_dest, O_CREAT|O_WRONLY|O_APPEND, 0666);
 	    close(STDOUT_FILENO);
 	    dup(fileid);
 	    close(STDERR_FILENO);
@@ -540,7 +540,7 @@ int sh( int argc, char **argv, char **envp )
 	int p = waitpid(tmp->next->pid, NULL, WNOHANG);
 
 	if(p != 0){
-	  printf("found dead child: %d\n", p);
+	  printf("(Shell: found dead child, pid=%d)\n", p);
 	  tmp->next = tmp->next->next;
 	}
 	else{
@@ -550,7 +550,7 @@ int sh( int argc, char **argv, char **envp )
 
       //shell sub-processes called via |
       if(leftchild == 0 || rightchild == 0){
-	printf("child process is now exiting\n");
+	//printf("child process is now exiting\n");
 	exit(0);
       }
 
