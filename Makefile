@@ -10,7 +10,7 @@ shell: sh.o get_path.o main.c
 pathmain: get_path.o get_path_main.o
 	$(CC) -g get_path.o get_path_main.o -o pathmain
 
-sh.o: sh.c sh.h alias.c base_commands.c history.c prompt.c setenv.c watchmail.c watchuser.c where.c which.c
+sh.o: sh.c sh.h alias.c base_commands.c history.c prompt.c setenv.c watchmail.c watchuser.c where.c which.c parsecommandline.c addhistory.c init.c
 	$(CC) -pthread -g -c sh.c
 
 get_path.o: get_path.c get_path.h
