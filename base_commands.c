@@ -192,6 +192,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
   if(args[argcount - 1] != NULL && strcmp(args[argcount - 1], "&") == 0){
     printf("found &\n");
     background = 1;
+    args[argcount - 1] = NULL;
   }
 
   if(strstr(command, "/") == command || strstr(command, ".") == command){
@@ -214,7 +215,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
 	}
 	else if(childpid == 0){
 	  pid_t mypid = getpid();
-	  printf("Executing [%s]\n", path_resolved);
+	  //printf("Executing [%s]\n", path_resolved);
 	  if(execve(path_resolved, args, envp) == -1){
 	    perror("Could not execute program");
 	    kill(mypid, SIGKILL);
@@ -261,7 +262,7 @@ int execute_command(char *command, char **args, char **envp, struct pathelement 
       }
       else if(childpid == 0){
 	pid_t mypid = getpid();
-	printf("Executing [%s]\n", tmp);
+	//printf("Executing [%s]\n", tmp);
 	if(execve(tmp, args, envp) == -1){
 	  perror("Killing child process");
 	  free(tmp);

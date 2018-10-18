@@ -168,6 +168,7 @@ int sh( int argc, char **argv, char **envp )
 	args[0] = malloc(sizeof(char) * (int) strlen(token) + 1);
 	strcpy(command, token);
 	strcpy(args[0], token);
+	printf("Executing command %s\n", command);
       }
       else{
 	input_error = 1;
@@ -211,6 +212,10 @@ int sh( int argc, char **argv, char **envp )
 	}       
       }
      
+      if(args[1] == NULL){
+	i = 0;
+      }
+
       free(token);
 
       argcount = i;
@@ -320,7 +325,101 @@ int sh( int argc, char **argv, char **envp )
 
 
 
+      int pipel = -1;
+      //printf("argcount = %d\n", argcount);
+      for(int j = 0; j < argcount; j++){
+	if(args[j] != NULL && strcmp(args[j], "|") == 0){
+	  pipel = j;
+	}
+      }
 
+      if(pipel == 0 || pipel == argcount){
+	pipel = 0;
+	input_error = 1;
+      }
+
+      char **leftargs = calloc(MAXARGS, sizeof(char*));
+      char **rightargs = calloc(MAXARGS, sizeof(char*));
+      pid_t leftchild = -1, rightchild = -1;
+      
+
+      if(pipel != 0 && pipel != -1){
+	for(int j = 0; j < pipel; j++){
+	  leftargs[j] = malloc(1 + (sizeof(char) * strlen(args[j])));
+	  strcpy(leftargs[j],args[j]);
+	}
+	int k = 0;
+	for(int j = pipel + 1; j < argcount; j++){
+	  rightargs[k] = malloc(1 + (sizeof(char) * strlen(args[j])));
+	  strcpy(rightargs[k],args[j]);
+	  k++;
+	}
+
+	//printf("right command: %s\n", rightargs[0]);
+
+	int ipc[2];
+	if(pipe(ipc) != 0){
+	  perror("Error when parsing '|', ");
+	  exit(0);
+	}
+
+
+	leftchild = fork();
+	if(leftchild == 0){
+	  args = leftargs;
+	  go = 0;
+	  close(STDOUT_FILENO);
+	  dup(ipc[1]);
+	  close(ipc[0]);
+	  //printf("left child! %s\n", command);
+	  //sleep(7);
+	}
+	else{
+	  rightchild = fork();
+	  if(rightchild == 0){
+	    args = rightargs;
+	    command = NULL;
+	    free(command);
+	    command = malloc(1 + (sizeof(char) * strlen(args[0])));
+	    strcpy(command, args[0]);
+	    go = 0;
+	    close(STDIN_FILENO);
+	    dup(ipc[0]);
+	    close(ipc[1]);
+	    //printf("right child! %s\n", command);
+	    //sleep(3);
+	  }
+	  else{
+	    input_error = 1;
+	    //waitpid(leftchild, NULL, 0);
+	    
+	    close(ipc[0]);
+	    close(ipc[1]);
+
+	    struct children *tmp;
+	    tmp = malloc(sizeof(struct children));
+	    tmp->pid = leftchild;
+	    tmp->next = NULL;
+	    if(childhead == NULL){
+	      childhead = tmp;
+	    }
+	    else{
+	      tmp->next = childhead;
+	      childhead = tmp;
+	    }
+	    
+	    waitpid(rightchild, NULL, 0);
+	  }
+	}
+
+      }
+
+      
+      
+
+
+
+      //      printf("rightarg0: %s\n", rightargs[0]);
 
 
 
@@ -332,68 +431,68 @@ int sh( int argc, char **argv, char **envp )
 	//if the user didn't input anything or didn't input correctly, don't do anything
       }
       else if(strcmp(command, "exit") == 0){
-	printf("Executing built-in command exit\n");
+	//	printf("Executing built-in command exit\n");
 	go = 0;
 	printf("Closing shell...\n\n\n");
       }
       else if(strcmp(command, "cd") == 0){
-	printf("Executing built-in command cd\n");
+	//	printf("Executing built-in command cd\n");
 	if(expanded) args[2] = NULL;//if we expanded a * or ?, use the first result, args[1]
 	cd(command, args, homedir, currentdir, previousdir);
       }
       else if(strcmp(command, "pwd") == 0){
-	printf("Executing built-in command pwd\n");
+	//	printf("Executing built-in command pwd\n");
 	char *tmp;
 	tmp = getcwd(NULL, 0);
 	printf("[%s]\n", tmp);
 	free(tmp);
       }
       else if(strcmp(command, "list") == 0){
-	printf("Executing built-in command list\n");
+	//	printf("Executing built-in command list\n");
 	list(command, args, currentdir);
       }
       else if(strcmp(command, "prompt") == 0){
-	printf("Executing built-in command prompt\n");
+	//	printf("Executing built-in command prompt\n");
 	#include "prompt.c"
       }
       else if(strcmp(command, "pid") == 0){
-	printf("Executing built-in command pid\n");
+	//	printf("Executing built-in command pid\n");
 	printf("PID: %d\n", getpid());
       }
       else if(strcmp(command, "kill") == 0){
-	printf("Executing built-in command kill\n");
+	//	printf("Executing built-in command kill\n");
 	killsig(command, args);
       }
       else if(strcmp(command, "which") == 0){
-	printf("Executing built-in command which\n");
+	//	printf("Executing built-in command which\n");
 	#include "which.c"
       }
       else if(strcmp(command, "where") == 0){
-	printf("Executing built-in command where\n");
+	//	printf("Executing built-in command where\n");
 	#include "where.c"
       }
       else if(strcmp(command, "history") == 0){
-	printf("Executing built-in command history\n");
+	//	printf("Executing built-in command history\n");
 	#include "history.c"
       }
       else if(strcmp(command, "printenv") == 0){
-	printf("Executing built-in command printenv\n");
+	//	printf("Executing built-in command printenv\n");
 	printenv(args, envp);
       }
       else if(strcmp(command, "setenv") == 0){
-	printf("Executing built-in command setenv\n");
+	//	printf("Executing built-in command setenv\n");
 	#include "setenv.c"
       }
       else if(strcmp(command, "watchmail") == 0){
-	printf("Watch mail initiated\n");
+	//	printf("Watch mail initiated\n");
 	#include "watchmail.c"
       }
       else if(strcmp(command, "watchuser") == 0){
-	printf("Executing built-in command watchuser\n");
+	//	printf("Executing built-in command watchuser\n");
 	#include "watchuser.c"
       }
       else if(strcmp(command, "noclobber") == 0){
-	printf("Executing built-in command noclobber\n");
+	//	printf("Executing built-in command noclobber\n");
 	if(noclobber == 0){
 	  noclobber = 1;
 	  printf("Noclobber is now on\n");
@@ -404,11 +503,11 @@ int sh( int argc, char **argv, char **envp )
 	}
       }      
       else if(strcmp(command, "alias") == 0){
-	printf("Executing built-in command alias\n");
+	//	printf("Executing built-in command alias\n");
 	#include "alias.c"
       }
       else{//if it's not a builtin command, it's either an external command or not valid
-	printf("Ready to execute external command...\n");
+	//	printf("Ready to execute external command...\n");
 	execute_command(command, args, envp, pathlist);
 
       }
@@ -449,7 +548,11 @@ int sh( int argc, char **argv, char **envp )
 	}
       }
 
-
+      //shell sub-processes called via |
+      if(leftchild == 0 || rightchild == 0){
+	printf("child process is now exiting\n");
+	exit(0);
+      }
 
       //freeing command and args for realloc
       command = NULL;
