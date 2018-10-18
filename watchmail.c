@@ -19,7 +19,8 @@
 	      strcpy(watchmailhead->str, filepath);
 	      watchmailhead->id = mail_t;
 	      watchmailhead->next = NULL;
-	    }else{
+	    }
+	    else{
 	      struct maillist *tmp = watchmailhead;
 	      while(tmp->next != NULL){
 		tmp = tmp->next;
@@ -31,7 +32,8 @@
 	      tmp->next->next = NULL;
 	    }
 	  }
-	}else if(args[2] != NULL && strcmp(args[2], "off") == 0){
+	}
+	else if(args[2] != NULL && strcmp(args[2], "off") == 0){
 	  //Remove head from watchlist
 	  if((watchmailhead != NULL) && (strcmp(watchmailhead->str, args[1]) == 0)){
 	    struct maillist *tmp = watchmailhead;
@@ -40,10 +42,12 @@
 	    int pj = pthread_join(tmp->id, NULL);
 	    printf("joined? %d\n", pj);
 	    tmp->next = NULL;
-	  }else{
+	  }
+	  else{
 	    if(watchmailhead == NULL){
 	      printf("No files being watched\n");
-	    }else{
+	    }
+	    else{
 	      //Remove another node from watchlist
 	      struct maillist *tmp2 = watchmailhead;
 	      if(tmp2->next != NULL){
@@ -56,7 +60,8 @@
 		  int j = pthread_join(tmp2->next->id, NULL);
 		  printf("joined? %d\n", j);
 		  tmp2->next = tmp2->next->next;
-		}else{
+		}
+		else{
 		  printf("File not being watched\n");
 		}
 	      }
